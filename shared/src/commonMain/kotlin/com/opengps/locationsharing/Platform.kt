@@ -22,11 +22,6 @@ abstract class Platform {
 
     private val geolocator = Geolocator(Locator.mobile())
 
-    suspend fun getLocation(): LocationValue? {
-        val location = geolocator.currentLocationOrNull() ?: return null
-        return LocationValue(Networking.userid!!, Coord(location.coordinates.latitude, location.coordinates.longitude), location.accuracy.toFloat(), Clock.System.now().toEpochMilliseconds())
-    }
-
     abstract fun runBackgroundService()
 }
 

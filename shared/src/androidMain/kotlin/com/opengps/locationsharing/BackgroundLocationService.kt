@@ -39,9 +39,18 @@ class BackgroundLocationService : Service() {
             while(platformObject == null) {
                 delay(100)
             }
+            val locationManager = getSystemService(LocationManager::class.java)
             while(true) {
-                backgroundTask { updateNotification(it.toString()) }
-                delay(30000)
+                val location = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER)
+                if(location != null) {
+                    backgroundTask(
+                        Coord(
+                            location.latitude,
+                            location.longitude
+                        )
+                    ) { updateNotification(it.toString()) }
+                }
+                delay(SHARE_INTERVAL)
             }
         }
     }

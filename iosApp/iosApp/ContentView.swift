@@ -3,6 +3,7 @@ import shared
 
 struct ComposeViewController: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
+        startLocationUpdates()
         return Platform_iosKt.MainViewController()
     }
 
@@ -12,7 +13,6 @@ struct ComposeViewController: UIViewControllerRepresentable {
 
 
 struct ContentView: View {
-
 	var body: some View {
         ComposeViewController()
 	}

@@ -53,6 +53,8 @@
     <string>This app needs to access your location in order to enable location sharing</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>This app needs to access your location in order to enable location sharing at all times</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app needs to access your location in order to enable location sharing at all times</string>
     <key>CADisableMinimumFrameDurationOnPhone</key><true/>
 </dict>
 </plist>

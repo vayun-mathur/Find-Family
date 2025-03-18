@@ -14,8 +14,8 @@ fun Main() {
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             Networking.init()
-            getPlatform().runBackgroundService()
         }
+        getPlatform().runBackgroundService()
     }
     UI()
 }
