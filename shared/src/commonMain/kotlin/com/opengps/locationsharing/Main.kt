@@ -14,11 +14,7 @@ fun Main() {
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             Networking.init()
-            //getPlatform().runBackgroundService()
-            while(true) {
-                backgroundTask { }
-                delay(2000)
-            }
+            getPlatform().runBackgroundService()
         }
     }
     UI()
