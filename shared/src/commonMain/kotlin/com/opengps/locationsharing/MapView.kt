@@ -102,8 +102,6 @@ val state = MapState(maxLevel + 1, mapSize, mapSize, workerCount = 16).apply {
     disableFlingZoom()
 }
 
-val users: SnapshotStateMap<ULong, User> = mutableStateMapOf()
-
 @Composable
 fun UserPicture(user: User) {
     if(user.photo != null) {
@@ -154,6 +152,8 @@ fun SuspendScope(block: suspend () -> Unit) {
 @Composable
 fun MapView(navController: NavHostController) {
     val platform = getPlatform()
+    val usersDao = platform.database.usersDao()
+    val users = remember { mutableStateMapOf<ULong, User>() }
 
     var selectedID by remember { mutableStateOf<ULong?>(null) }
     var addPopupEnable by remember { mutableStateOf(false) }
@@ -167,8 +167,20 @@ fun MapView(navController: NavHostController) {
     LaunchedEffect(Unit) {
         SuspendScope {
             waypoints.putAll(platform.database.waypointDao().getAll().associateBy { it.id })
+            users.putAll(usersDao.getAll().associateBy { it.id })
             while(Networking.userid == null) { delay(500) }
-            users[Networking.userid!!] = User(Networking.userid!!, "Me", null, "Unnamed Location", true, true)
+            if(users.values.isEmpty()) {
+                val newUser = User(
+                    Networking.userid!!,
+                    "Me",
+                    null,
+                    "Unnamed Location",
+                    true,
+                    true
+                )
+                usersDao.upsert(newUser)
+                users[newUser.id] = newUser
+            }
         }
     }
 
@@ -255,6 +267,8 @@ fun MapView(navController: NavHostController) {
             if(state.hasMarker(id.toString())) {
                 val res = doProjection(location.coord)
                 state.moveMarker(id.toString(), res.first, res.second)
+            } else {
+                addUserMarker(users[id]!!)
             }
             if(users[id] != null) {
                 val waypointOverlap = waypoints.values.firstOrNull { waypoint ->
@@ -265,9 +279,14 @@ fun MapView(navController: NavHostController) {
         }
     }
     val requestPickContact1 = platform.requestPickContact { name, photo ->
-        users[selectedID!!] = User(selectedID!!, name, photo, users[selectedID]!!.locationName, users[selectedID]!!.receive, users[selectedID]!!.send)
-        state.removeMarker(selectedID!!.toString())
-        addUserMarker(users[selectedID!!]!!)
+        SuspendScope {
+            println(selectedID, name, photo, users[selectedID])
+            val newUser = users[selectedID]!!.copy(name = name, photo = photo)
+            users[selectedID!!] = newUser
+            usersDao.upsert(newUser)
+            state.removeMarker(selectedID!!.toString())
+            addUserMarker(users[selectedID!!]!!)
+        }
     }
     BasicDialog(addWaypointPopupEnable, { addWaypointPopupEnable = false }) {
         Text("Add a Waypoint", style = MaterialTheme.typography.headlineMedium)
@@ -366,7 +385,11 @@ fun MapView(navController: NavHostController) {
             {
                 val trueID = recipientID.decodeBase26()
                 addPopupEnable = false
-                users[trueID] = User(trueID, contactName, contactPhoto, "", receive, send)
+                val newUser = User(trueID, contactName, contactPhoto, "", receive, send)
+                users[trueID] = newUser
+                SuspendScope {
+                    usersDao.upsert(newUser)
+                }
             },
             enabled = (contactName.isNotEmpty() && recipientID.isNotEmpty())
         ) {
@@ -417,7 +440,11 @@ fun MapView(navController: NavHostController) {
                             Spacer(Modifier.weight(1f))
                             Checkbox(
                                 users[selectedID]!!.receive,
-                                { users[selectedID!!] = users[selectedID]!!.copy(receive = it) })
+                                {
+                                    val newUser = users[selectedID]!!.copy(receive = it)
+                                    users[selectedID!!] = newUser
+                                    SuspendScope{usersDao.upsert(newUser)}
+                                })
                         }
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -425,7 +452,11 @@ fun MapView(navController: NavHostController) {
                             Spacer(Modifier.weight(1f))
                             Checkbox(
                                 users[selectedID]!!.send,
-                                { users[selectedID!!] = users[selectedID]!!.copy(send = it) })
+                                {
+                                    val newUser = users[selectedID]!!.copy(send = it)
+                                    users[selectedID!!] = newUser
+                                    SuspendScope{usersDao.upsert(newUser)}
+                                })
                         }
                     }
                 }
@@ -436,8 +467,11 @@ fun MapView(navController: NavHostController) {
                     Text("Change connected contact")
                 }
                 OutlinedButton({
-                    users.remove(selectedID)
-                    selectedID = null
+                    SuspendScope {
+                        usersDao.delete(selectedID!!)
+                        users.remove(selectedID!!)
+                        selectedID = null
+                    }
                 }) {
                     Text("Disconnect")
                 }

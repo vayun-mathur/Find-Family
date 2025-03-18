@@ -17,7 +17,7 @@ fun Main() {
             //getPlatform().runBackgroundService()
             while(true) {
                 backgroundTask { }
-                delay(20000)
+                delay(2000)
             }
         }
     }

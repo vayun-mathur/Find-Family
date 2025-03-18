@@ -1,6 +1,5 @@
 package com.opengps.locationsharing
 
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.byteArrayPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -17,8 +16,6 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import io.ktor.utils.io.core.toByteArray
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
@@ -103,14 +100,14 @@ class Networking {
 
         private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: AES.CTR.Key): LocationSharingData {
             val cipher = key.cipher()
-            val str = Json.encodeToString(location);
-            val encryptedData = cipher.encrypt(str.encodeToByteArray()).encodeBase64();
-            return LocationSharingData(recipientUserID, encryptedData);
+            val str = Json.encodeToString(location)
+            val encryptedData = cipher.encrypt(str.encodeToByteArray()).encodeBase64()
+            return LocationSharingData(recipientUserID, encryptedData)
         }
 
         private suspend fun decryptLocation(encryptedLocation: String): LocationValue {
             val cipher = key!!.cipher()
-            val decryptedData = cipher.decrypt(encryptedLocation.decodeBase64Bytes()).decodeToString();
+            val decryptedData = cipher.decrypt(encryptedLocation.decodeBase64Bytes()).decodeToString()
             return Json.decodeFromString(decryptedData)
         }
 

@@ -14,11 +14,13 @@ var latestLocations by mutableStateOf(mutableMapOf<ULong, LocationValue>())
 var location by mutableStateOf<LocationValue?>(null)
 
 private suspend fun locationBackend(waypoints: List<Waypoint>, locationValue: LocationValue) {
-    users.filter{ it.value.send }.values.forEach { Networking.publishLocation(locationValue, it) }
+    val users = getPlatform().database.usersDao().getAll()
+    println(users)
+    users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     location = locationValue
     locations = (
             Networking.receiveLocations()
-            ).groupBy { it.userid }.filterKeys { users[it]?.receive?:false }.toMutableMap()
+            ).groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.toMutableMap()
     println(locations.mapValues { it.value.maxBy { it.timestamp } })
     latestLocations = locations.mapValues { it.value.maxBy { it.timestamp } }.toMutableMap()
 }

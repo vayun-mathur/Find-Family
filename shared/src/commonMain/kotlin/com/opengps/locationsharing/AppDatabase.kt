@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -11,6 +12,10 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Entity
@@ -73,11 +78,30 @@ interface WaypointDao {
     suspend fun deleteAll()
 }
 
-@Database(entities = [Waypoint::class], version = 1)
+@Dao
+interface UsersDao {
+    @Query("SELECT * FROM User")
+    suspend fun getAll(): List<User>
+
+    @Query("SELECT * FROM User WHERE id = :id")
+    suspend fun getById(id: ULong): User?
+
+    @Upsert
+    suspend fun upsert(user: User)
+
+    @Query("DELETE FROM User WHERE id = :id")
+    suspend fun delete(id: ULong)
+
+    @Query("DELETE FROM User")
+    suspend fun deleteAll()
+}
+
+@Database(entities = [Waypoint::class, User::class], version = 1)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun waypointDao(): WaypointDao
+    abstract fun usersDao(): UsersDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
