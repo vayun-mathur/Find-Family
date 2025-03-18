@@ -153,6 +153,8 @@ fun SuspendScope(block: suspend () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapView(navController: NavHostController) {
+    val platform = getPlatform()
+
     var selectedID by remember { mutableStateOf<ULong?>(null) }
     var addPopupEnable by remember { mutableStateOf(false) }
     var addWaypointPopupEnable by remember { mutableStateOf(false) }
@@ -164,7 +166,7 @@ fun MapView(navController: NavHostController) {
 
     LaunchedEffect(Unit) {
         SuspendScope {
-            waypoints.putAll(Platform.current!!.database.waypointDao().getAll().associateBy { it.id })
+            waypoints.putAll(platform.database.waypointDao().getAll().associateBy { it.id })
             while(Networking.userid == null) { delay(500) }
             users[Networking.userid!!] = User(Networking.userid!!, "Me", null, "Unnamed Location", true, true)
         }
@@ -262,7 +264,7 @@ fun MapView(navController: NavHostController) {
             }
         }
     }
-    val requestPickContact1 = Platform.current!!.requestPickContact { name, photo ->
+    val requestPickContact1 = platform.requestPickContact { name, photo ->
         users[selectedID!!] = User(selectedID!!, name, photo, users[selectedID]!!.locationName, users[selectedID]!!.receive, users[selectedID]!!.send)
         state.removeMarker(selectedID!!.toString())
         addUserMarker(users[selectedID!!]!!)
@@ -290,7 +292,7 @@ fun MapView(navController: NavHostController) {
                     waypoints[id] =
                         Waypoint(id, waypointName, waypointRadius.toDouble(), longHeldPoint)
                     SuspendScope {
-                        Platform.current!!.database.waypointDao().upsert(waypoints[id]!!)
+                        platform.database.waypointDao().upsert(waypoints[id]!!)
                     }
                     addWaypointPopupEnable = false
                     addWaypointMarker(waypoints[id]!!)
@@ -308,7 +310,7 @@ fun MapView(navController: NavHostController) {
     BasicDialog(addPopupEnable, { addPopupEnable = false }) {
         var contactName by remember { mutableStateOf("") }
         var contactPhoto by remember { mutableStateOf<String?>(null) }
-        val requestPickContact2 = Platform.current!!.requestPickContact { name, photo ->
+        val requestPickContact2 = platform.requestPickContact { name, photo ->
             contactName = name
             contactPhoto = photo
         }
@@ -486,7 +488,7 @@ fun MapView(navController: NavHostController) {
                                 coord
                             )
                             SuspendScope {
-                                Platform.current!!.database.waypointDao()
+                                platform.database.waypointDao()
                                     .upsert(waypoints[selectedID]!!)
                             }
                         }

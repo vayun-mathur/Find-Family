@@ -18,8 +18,9 @@ compose-multiplatform = "1.7.0"
 core = "1.15.0"
 activityKtx = "1.10.1"
 activity = "1.10.1"
-androidx-room = "2.7.0-alpha12"
+androidx-room = "2.7.0-rc02"
 ksp = "2.1.0-1.0.29"
+compass = "1.2.2"
 
 [libraries]
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
@@ -50,6 +51,9 @@ androidx-activity = { group = "androidx.activity", name = "activity", version.re
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
 androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "androidx-room" }
+compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
+compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }
+compass-permissions-mobile = { module = "dev.jordond.compass:permissions-mobile", version.ref = "compass" }
 
 
 

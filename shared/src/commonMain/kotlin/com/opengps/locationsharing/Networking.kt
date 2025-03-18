@@ -33,15 +33,16 @@ class Networking {
                 json()
             }
         }
-        private val crypto = CryptographyProvider.Default.get(AES.GCM)
-        private var key: AES.GCM.Key? = null
+        private val crypto = CryptographyProvider.Default.get(AES.CTR)
+        private var key: AES.CTR.Key? = null
         var userid: ULong? = null
             private set
 
         private suspend fun getPrivateKey() {
+            val platform = getPlatform()
             val privateKeyKey = byteArrayPreferencesKey("privateKey")
             val useridKey = longPreferencesKey("userid")
-            Platform.current!!.dataStore.edit {
+            platform.dataStore.edit {
                 key = it[privateKeyKey]?.let { it1 ->
                     crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, it1)
                 }
@@ -50,7 +51,7 @@ class Networking {
             if(key == null) {
                 key = crypto.keyGenerator(AES.Key.Size.B256).generateKey()
                 userid = Random.nextULong()
-                Platform.current!!.dataStore.edit {
+                platform.dataStore.edit {
                     it[privateKeyKey] = key!!.encodeToByteArray(AES.Key.Format.RAW)
                     it[useridKey] = userid!!.toLong()
                 }
@@ -71,7 +72,7 @@ class Networking {
             }
         }
 
-        private suspend fun getKey(userid: ULong): AES.GCM.Key? {
+        private suspend fun getKey(userid: ULong): AES.CTR.Key? {
             val response = client.post("https://$url/getkey") {
                 contentType(ContentType.Application.Json)
                 setBody("{\"userid\": $userid}")
@@ -100,7 +101,7 @@ class Networking {
             return locations
         }
 
-        private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: AES.GCM.Key): LocationSharingData {
+        private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: AES.CTR.Key): LocationSharingData {
             val cipher = key.cipher()
             val str = Json.encodeToString(location);
             val encryptedData = cipher.encrypt(str.encodeToByteArray()).encodeBase64();

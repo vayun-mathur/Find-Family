@@ -3,23 +3,21 @@ package com.opengps.locationsharing
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.location.LocationManager
 import android.provider.ContactsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.runtime.Composable
-import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.database.getStringOrNull
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
-import androidx.room.RoomDatabase
+import androidx.sqlite.driver.AndroidSQLiteDriver
 
 
-class AndroidPlatform(private val activity: ComponentActivity): Platform {
-    override val name: String = "Android"
+class AndroidPlatform(private val activity: ComponentActivity): Platform() {
     override val dataStore: DataStore<Preferences> = createDataStore(activity)
 
     @SuppressLint("Range")
@@ -38,18 +36,22 @@ class AndroidPlatform(private val activity: ComponentActivity): Platform {
         return {launcher.launch()}
     }
 
-    private val locationManager = activity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    override val database = Room.databaseBuilder(activity, AppDatabase::class.java, "database.db")
+        .setDriver(AndroidSQLiteDriver()).build()
 
-    @SuppressLint("MissingPermission")
-    override fun getLocation(): LocationValue? {
-        val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) ?: return null
-        return LocationValue(Networking.userid!!, Coord(location.latitude, location.longitude), location.accuracy, System.currentTimeMillis())
+    override fun runBackgroundService() {
+        activity.startForegroundService(Intent(activity, BackgroundLocationService::class.java))
     }
 
-    override val database = Room.databaseBuilder(activity, AppDatabase::class.java, "database.db").build()
 }
 
 fun createDataStore(context: Context): DataStore<Preferences> =
     createDataStore(
         producePath = { context.filesDir.resolve(dataStoreFileName).absolutePath }
     )
+
+actual fun getPlatform(): Platform {
+    return platformObject!!
+}
+
+var platformObject: AndroidPlatform? = null

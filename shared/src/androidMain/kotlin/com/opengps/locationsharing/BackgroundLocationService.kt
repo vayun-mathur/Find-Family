@@ -36,10 +36,13 @@ class BackgroundLocationService : Service() {
     @SuppressLint("MissingPermission")
     private fun startUpdatingNotification() {
         serviceJob = CoroutineScope(Dispatchers.IO).launch {
-            while(Platform.current == null) {
+            while(platformObject == null) {
                 delay(100)
             }
-            backgroundTask(Platform.current!!) { updateNotification(it.toString()) }
+            while(true) {
+                backgroundTask { updateNotification(it.toString()) }
+                delay(30000)
+            }
         }
     }
 

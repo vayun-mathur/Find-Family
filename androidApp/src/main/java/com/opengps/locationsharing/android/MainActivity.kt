@@ -12,9 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.tooling.preview.Preview
 import com.opengps.locationsharing.BackgroundLocationService
+import com.opengps.locationsharing.Main
 import com.opengps.locationsharing.Networking
 import com.opengps.locationsharing.Platform
 import com.opengps.locationsharing.UI
+import com.opengps.locationsharing.getPlatform
+import com.opengps.locationsharing.platformObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,18 +27,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if(Platform.current == null)
-            Platform.current = com.opengps.locationsharing.AndroidPlatform(this)
+        if(platformObject == null)
+            platformObject = com.opengps.locationsharing.AndroidPlatform(this)
 
         setContent {
             MyApplicationTheme {
-                LaunchedEffect(Unit) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        Networking.init()
-                        startForegroundService(Intent(this@MainActivity, BackgroundLocationService::class.java))
-                    }
-                }
-                UI()
+                Main()
             }
         }
     }

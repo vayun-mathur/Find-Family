@@ -1,11 +1,13 @@
 package com.opengps.locationsharing
 
+import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
@@ -56,23 +58,29 @@ data class Waypoint(
 @Dao
 interface WaypointDao {
     @Query("SELECT * FROM Waypoint")
-    fun getAll(): List<Waypoint>
+    suspend fun getAll(): List<Waypoint>
 
     @Query("SELECT * FROM Waypoint WHERE id = :id")
-    fun getById(id: Long): Waypoint?
+    suspend fun getById(id: Long): Waypoint?
 
     @Upsert
-    fun upsert(wp: Waypoint)
+    suspend fun upsert(wp: Waypoint)
 
     @Query("DELETE FROM Waypoint WHERE id = :id")
-    fun delete(id: Long)
+    suspend fun delete(id: Long)
 
     @Query("DELETE FROM Waypoint")
-    fun deleteAll()
+    suspend fun deleteAll()
 }
 
 @Database(entities = [Waypoint::class], version = 1)
 @TypeConverters(TC::class)
+@ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun waypointDao(): WaypointDao
+}
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+    override fun initialize(): AppDatabase
 }

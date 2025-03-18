@@ -29,11 +29,19 @@ kotlin {
         it.binaries.framework {
             baseName = "shared"
             isStatic = true
+
+            // Required when using NativeSQLiteDriver
+            linkerOpts.add("-lsqlite3")
         }
     }
 
     sourceSets {
         commonMain.dependencies {
+            //location
+            implementation(libs.compass.geolocation)
+            implementation(libs.compass.geolocation.mobile)
+            implementation(libs.compass.permissions.mobile)
+
             implementation(libs.androidx.room.runtime)
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             implementation(libs.navigation.compose)
@@ -72,6 +80,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
             implementation("dev.whyoleg.cryptography:cryptography-provider-apple:0.4.0")
+            implementation("androidx.sqlite:sqlite-bundled:2.5.0-rc02")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

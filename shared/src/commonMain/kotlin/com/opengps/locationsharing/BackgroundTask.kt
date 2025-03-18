@@ -23,22 +23,15 @@ private suspend fun locationBackend(waypoints: List<Waypoint>, locationValue: Lo
     latestLocations = locations.mapValues { it.value.maxBy { it.timestamp } }.toMutableMap()
 }
 
-suspend fun backgroundTask(platform: Platform, updateNotification: (LocationValue) -> Unit) {
-    var waypoints = platform.database.waypointDao().getAll()
+suspend fun backgroundTask(updateNotification: (LocationValue) -> Unit) {
+    val platform = getPlatform()
+    val waypoints = platform.database.waypointDao().getAll()
     while(Networking.userid == null) {
         delay(1000)
     }
-    var cnt = 0
-    while (true) {
-        val locationValue = platform.getLocation()
-        if(locationValue != null) {
-            updateNotification(locationValue)
-            locationBackend(waypoints, locationValue)
-        }
-        delay(30000)
-        cnt++
-        if(cnt % 10 == 0) {
-            waypoints = platform.database.waypointDao().getAll()
-        }
+    val locationValue = platform.getLocation()
+    if(locationValue != null) {
+        updateNotification(locationValue)
+        locationBackend(waypoints, locationValue)
     }
 }
