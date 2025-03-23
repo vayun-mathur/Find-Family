@@ -17,7 +17,7 @@ val confirmCount by mutableStateOf(mutableMapOf<ULong, UInt>())
 val confirmType by mutableStateOf(mutableMapOf<ULong, String>())
 
 const val SHARE_INTERVAL = 3000L
-const val CONFIRMATIONS_REQUIRED = 2u
+const val CONFIRMATIONS_REQUIRED = 10u
 
 private suspend fun locationBackend(locationValue: LocationValue) {
     val platform = getPlatform()
