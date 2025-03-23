@@ -20,11 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,8 +35,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,7 +52,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
@@ -78,6 +76,7 @@ import ovh.plrapps.mapcompose.api.hasMarker
 import ovh.plrapps.mapcompose.api.moveMarker
 import ovh.plrapps.mapcompose.api.onLongPress
 import ovh.plrapps.mapcompose.api.onMarkerClick
+import ovh.plrapps.mapcompose.api.onTap
 import ovh.plrapps.mapcompose.api.removeAllMarkers
 import ovh.plrapps.mapcompose.api.removeMarker
 import ovh.plrapps.mapcompose.api.scale
@@ -150,13 +149,13 @@ fun SuspendScope(block: suspend () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapView(navController: NavHostController) {
+fun MapView() {
     val platform = getPlatform()
     val usersDao = platform.database.usersDao()
     val users = remember { mutableStateMapOf<ULong, User>() }
 
     var selectedID by remember { mutableStateOf<ULong?>(null) }
-    var addPopupEnable by remember { mutableStateOf(false) }
+    var addPersonPopupEnabled by remember { mutableStateOf(false) }
     var addWaypointPopupEnable by remember { mutableStateOf(false) }
     var longHeldPoint by remember { mutableStateOf(Coord(0.0,0.0)) }
     var editingWaypoint by remember { mutableStateOf(false) }
@@ -244,7 +243,7 @@ fun MapView(navController: NavHostController) {
         }
     }
 
-    LaunchedEffect(selectedID) {
+    LaunchedEffect(Unit) {
         state.removeAllMarkers()
         if(selectedID != null && users[selectedID] != null) {
             addUserMarker(users[selectedID!!]!!)
@@ -289,7 +288,7 @@ fun MapView(navController: NavHostController) {
         }
     }
     BasicDialog(addWaypointPopupEnable, { addWaypointPopupEnable = false }) {
-        Text("Add a Waypoint", style = MaterialTheme.typography.headlineMedium)
+        Text("Add Saved Location", style = MaterialTheme.typography.headlineMedium)
         var waypointName by remember { mutableStateOf("") }
         OutlinedTextField(
             waypointName,
@@ -301,8 +300,6 @@ fun MapView(navController: NavHostController) {
             waypointRadius,
             { waypointRadius = it },
             label = { Text("Waypoint Range (Radius)") }, suffix = { Text("meters") })
-
-        Spacer(Modifier.weight(1f))
 
         Row {
             OutlinedButton(
@@ -318,7 +315,7 @@ fun MapView(navController: NavHostController) {
                 },
                 enabled = (waypointName.isNotEmpty() && waypointRadius.isPositiveNumber())
             ) {
-                Text("Add Waypoint")
+                Text("Add Location")
             }
             Spacer(Modifier.width(16.dp))
             OutlinedButton({ addWaypointPopupEnable = false }) {
@@ -326,7 +323,7 @@ fun MapView(navController: NavHostController) {
             }
         }
     }
-    BasicDialog(addPopupEnable, { addPopupEnable = false }) {
+    BasicDialog(addPersonPopupEnabled, { addPersonPopupEnabled = false }) {
         var contactName by remember { mutableStateOf("") }
         var contactPhoto by remember { mutableStateOf<String?>(null) }
         val requestPickContact2 = platform.requestPickContact { name, photo ->
@@ -384,7 +381,7 @@ fun MapView(navController: NavHostController) {
         OutlinedButton(
             {
                 val trueID = recipientID.decodeBase26()
-                addPopupEnable = false
+                addPersonPopupEnabled = false
                 val newUser = User(trueID, contactName, contactPhoto, "", receive, send)
                 users[trueID] = newUser
                 SuspendScope {
@@ -396,9 +393,6 @@ fun MapView(navController: NavHostController) {
             Text("Start Location Sharing")
         }
     }
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    )
     BottomSheetScaffold(topBar = {
         if (selectedID != null) {
             if (users[selectedID] != null) {
@@ -418,8 +412,24 @@ fun MapView(navController: NavHostController) {
             }
         } else {
             TopAppBar(title = { Text("Location Sharing") }, actions = {
-                IconButton(onClick = { addPopupEnable = true }) {
-                    Icon(Icons.Default.Add, null)
+                Box() {
+                    var expanded by remember { mutableStateOf(false) }
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.Add, null)
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Add Person") },
+                            onClick = { addPersonPopupEnabled = true; expanded = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add Saved Location") },
+                            onClick = { addWaypointPopupEnable = true; expanded = false }
+                        )
+                    }
                 }
             })
         }
@@ -535,6 +545,9 @@ fun MapView(navController: NavHostController) {
         }
         Spacer(Modifier.height(32.dp))
     }) {
+        state.onTap { x, y ->
+            selectedID = null
+        }
         MapUI(Modifier.fillMaxSize(), state = state) {
             waypoints.values.forEach { waypoint ->
 

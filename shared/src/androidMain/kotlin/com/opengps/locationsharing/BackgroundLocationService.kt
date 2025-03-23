@@ -5,7 +5,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
 import android.os.IBinder
@@ -41,7 +40,7 @@ class BackgroundLocationService : Service() {
             }
             val locationManager = getSystemService(LocationManager::class.java)
             while(true) {
-                val location = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER)
+                val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 if(location != null) {
                     backgroundTask(
                         Coord(

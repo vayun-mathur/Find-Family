@@ -3,7 +3,6 @@ package com.opengps.locationsharing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 
@@ -27,12 +26,11 @@ private suspend fun locationBackend(waypoints: List<Waypoint>, locationValue: Lo
     println(latestLocations)
 }
 
+// will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord, updateNotification: (LocationValue) -> Unit) {
+    if(Networking.userid == null) return
     val platform = getPlatform()
     val waypoints = platform.database.waypointDao().getAll()
-    while(Networking.userid == null) {
-        delay(1000)
-    }
     val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), 1.0f, Clock.System.now().toEpochMilliseconds())
     updateNotification(locationValue)
     locationBackend(waypoints, locationValue)
