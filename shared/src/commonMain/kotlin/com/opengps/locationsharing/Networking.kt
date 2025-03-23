@@ -45,7 +45,7 @@ class Networking {
                 }
                 userid = it[useridKey]?.toULong()
             }
-            if(key == null) {
+            if (key == null) {
                 key = crypto.keyGenerator(AES.Key.Size.B256).generateKey()
                 userid = Random.nextULong()
                 platform.dataStore.edit {
@@ -57,7 +57,8 @@ class Networking {
         }
 
         suspend fun init() {
-            getPrivateKey()
+            if(key == null)
+                getPrivateKey()
         }
 
         private suspend fun register() {
@@ -112,6 +113,6 @@ class Networking {
         }
 
         @Serializable
-        private data class LocationSharingData(val recipientUserID: ULong, val encryptedLocation: String);
+        private data class LocationSharingData(val recipientUserID: ULong, val encryptedLocation: String)
     }
 }

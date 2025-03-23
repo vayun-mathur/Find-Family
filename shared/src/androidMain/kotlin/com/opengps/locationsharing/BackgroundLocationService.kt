@@ -35,9 +35,9 @@ class BackgroundLocationService : Service() {
     @SuppressLint("MissingPermission")
     private fun startUpdatingNotification() {
         serviceJob = CoroutineScope(Dispatchers.IO).launch {
-            while(platformObject == null) {
-                delay(100)
-            }
+            Networking.init()
+            if(platformObject == null)
+                platformObject = AndroidPlatform(this@BackgroundLocationService)
             val locationManager = getSystemService(LocationManager::class.java)
             while(true) {
                 val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)

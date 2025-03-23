@@ -25,6 +25,17 @@
             android:name="com.opengps.locationsharing.BackgroundLocationService"
             android:foregroundServiceType="location">
         </service>
+
+        <receiver
+            android:name="BootBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

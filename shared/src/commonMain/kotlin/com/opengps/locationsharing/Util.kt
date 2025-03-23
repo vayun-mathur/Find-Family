@@ -44,10 +44,10 @@ fun String.decodeBase26(): ULong {
 
 fun ULong.encodeBase26(): String {
     var result = ""
-    var remaining = this;
+    var remaining = this
     while(remaining > 0uL) {
         result = ((remaining % 26uL) + 65uL).toInt().toChar() + result
         remaining /= 26uL
     }
-    return result;
+    return result
 }

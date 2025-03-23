@@ -21,8 +21,9 @@ private suspend fun locationBackend(waypoints: List<Waypoint>, locationValue: Lo
     location = locationValue
     locations = (
             Networking.receiveLocations()
-            ).groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.toMutableMap()
-    latestLocations = locations.mapValues { it.value.maxBy { it.timestamp } }.toMutableMap()
+            ).groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }.toMutableMap()
+    latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
+    //TODO: check if entered a waypoint or exited a waypoint
     println(latestLocations)
 }
 
