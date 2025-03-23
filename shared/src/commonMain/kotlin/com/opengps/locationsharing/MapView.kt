@@ -61,6 +61,7 @@ import io.ktor.utils.io.asSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ovh.plrapps.mapcompose.api.DefaultCanvas
@@ -141,8 +142,8 @@ fun Circle(
     }
 }
 
-fun SuspendScope(block: suspend () -> Unit) {
-    CoroutineScope(Dispatchers.IO).launch {
+fun SuspendScope(block: suspend () -> Unit): Job {
+    return CoroutineScope(Dispatchers.IO).launch {
         block()
     }
 }
@@ -163,6 +164,22 @@ fun MapView() {
     var editingWaypointRadius by remember { mutableStateOf(0.0) }
     val waypoints: SnapshotStateMap<ULong, Waypoint> = remember { mutableStateMapOf() }
 
+    fun addUserMarker(user: User) {
+        val loc = latestLocations[user.id]?: return
+        val res = doProjection(loc.coord)
+        state.addMarker(user.id.toString(), res.first, res.second, relativeOffset = Offset(-0.5f, -0.5f)) {
+            UserPicture(user)
+        }
+    }
+
+    fun addWaypointMarker(waypoint: Waypoint) {
+        val res = doProjection(waypoint.coord)
+        state.addMarker(waypoint.id.toString(), res.first, res.second) {
+            if(state.scale > 0.6)
+                Icon(Icons.Default.LocationOn, null, tint = Color.Blue)
+        }
+    }
+
     LaunchedEffect(Unit) {
         SuspendScope {
             waypoints.putAll(platform.database.waypointDao().getAll().associateBy { it.id })
@@ -180,6 +197,15 @@ fun MapView() {
                 usersDao.upsert(newUser)
                 users[newUser.id] = newUser
             }
+
+            state.removeAllMarkers()
+            if(selectedID != null && users[selectedID] != null) {
+                addUserMarker(users[selectedID!!]!!)
+                state.centerOnMarker(selectedID!!.toString())
+            } else {
+                users.values.forEach(::addUserMarker)
+            }
+            waypoints.values.forEach(::addWaypointMarker)
         }
     }
 
@@ -214,22 +240,6 @@ fun MapView() {
         }
     }
 
-    fun addUserMarker(user: User) {
-        val loc = latestLocations[user.id]?: return
-        val res = doProjection(loc.coord)
-        state.addMarker(user.id.toString(), res.first, res.second, relativeOffset = Offset(-0.5f, -0.5f)) {
-            UserPicture(user)
-        }
-    }
-
-    fun addWaypointMarker(waypoint: Waypoint) {
-        val res = doProjection(waypoint.coord)
-        state.addMarker(waypoint.id.toString(), res.first, res.second) {
-            if(state.scale > 0.6)
-                Icon(Icons.Default.LocationOn, null, tint = Color.Blue)
-        }
-    }
-
     LaunchedEffect(Unit) {
         state.onLongPress { x, y ->
             longHeldPoint = doInverseProjection(x, y)
@@ -241,17 +251,6 @@ fun MapView() {
                 state.centerOnMarker(id)
             }
         }
-    }
-
-    LaunchedEffect(Unit) {
-        state.removeAllMarkers()
-        if(selectedID != null && users[selectedID] != null) {
-            addUserMarker(users[selectedID!!]!!)
-            state.centerOnMarker(selectedID!!.toString())
-        } else {
-            users.values.forEach(::addUserMarker)
-        }
-        waypoints.values.forEach(::addWaypointMarker)
     }
 
     LaunchedEffect(state.centroidY, state.centroidX) {
@@ -555,7 +554,7 @@ fun MapView() {
                     if (editingWaypoint && waypoint.id == selectedID) editingWaypointPosition
                     else doProjection(waypoint.coord)
                 val radius =
-                    ((if (editingWaypoint && waypoint.id == selectedID) editingWaypointRadius else waypoint.range) / 12_742_000) * 1 / cos(
+                    ((if (editingWaypoint && waypoint.id == selectedID) editingWaypointRadius else waypoint.range) / 12_742_000/3) * 1 / cos(
                         radians(waypoint.coord.lat)
                     )
                 Circle(
@@ -567,7 +566,7 @@ fun MapView() {
                     ),
                     color = Color(0x80Add8e6),
                     borderColor = Color(0xffAdd8e6),
-                    radius = state.fullSize.width * radius.toFloat(),
+                    radius = state.fullSize.height * radius.toFloat(),
                     isScaling = true
                 )
             }

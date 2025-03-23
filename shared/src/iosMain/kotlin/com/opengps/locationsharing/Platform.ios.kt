@@ -76,6 +76,10 @@ class IOSPlatform: Platform() {
     override fun runBackgroundService() {
         BackgroundService()
     }
+
+    override fun createNotification(s: String, channelId: String) {
+        //TODO: implement this later
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class)

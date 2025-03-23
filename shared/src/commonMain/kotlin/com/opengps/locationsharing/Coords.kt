@@ -42,7 +42,7 @@ private fun normalize(t: Double, min: Double, max: Double): Double {
 private const val X0 = -2.0037508342789248E7
 
 fun havershine(p1: Coord, p2: Coord): Double {
-    val R = 6371 // Radius of the earth in km
+    val R = 6371000 // Radius of the earth in m
     val dLat = radians(p2.lat-p1.lat)  // deg2rad below
     val dLon = radians(p2.lon-p1.lon)
     val a =
@@ -50,6 +50,6 @@ fun havershine(p1: Coord, p2: Coord): Double {
                 cos(radians(p1.lat)) * cos(radians(p2.lat)) *
                 sin(dLon/2) * sin(dLon/2)
     val c = 2 * atan2(sqrt(a), sqrt(1-a))
-    val d = R * c // Distance in km
+    val d = R * c // Distance in m
     return d
 }

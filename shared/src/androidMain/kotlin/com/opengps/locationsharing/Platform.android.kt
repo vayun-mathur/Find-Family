@@ -1,6 +1,7 @@
 package com.opengps.locationsharing
 
 import android.annotation.SuppressLint
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.provider.ContactsContract
@@ -8,11 +9,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.runtime.Composable
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.database.getStringOrNull
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import kotlin.random.Random
 
 
 class AndroidPlatform(private val context: Context): Platform() {
@@ -39,6 +43,17 @@ class AndroidPlatform(private val context: Context): Platform() {
 
     override fun runBackgroundService() {
         context.startForegroundService(Intent(context, BackgroundLocationService::class.java))
+    }
+
+    override fun createNotification(s: String, channelId: String) {
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setContentTitle("Location Sharing")
+            .setContentText(s)
+            .setSmallIcon(R.drawable.baseline_notifications_24) // Replace with your icon
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .build()
+        val notificationManager = getSystemService(context, NotificationManager::class.java)!!
+        notificationManager.notify(Random.nextInt(), notification)
     }
 
 }

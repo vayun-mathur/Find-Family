@@ -4,14 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.RoomDatabase
-import dev.jordond.compass.geolocation.Geolocator
-import dev.jordond.compass.geolocation.Locator
-import dev.jordond.compass.geolocation.currentLocationOrNull
-import dev.jordond.compass.geolocation.mobile.mobile
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.datetime.Clock
 import okio.Path.Companion.toPath
 
 abstract class Platform {
@@ -20,9 +12,8 @@ abstract class Platform {
     @Composable
     abstract fun requestPickContact(callback: (String, String?)->Unit): ()->Unit
 
-    private val geolocator = Geolocator(Locator.mobile())
-
     abstract fun runBackgroundService()
+    abstract fun createNotification(s: String, channelId: String)
 }
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =

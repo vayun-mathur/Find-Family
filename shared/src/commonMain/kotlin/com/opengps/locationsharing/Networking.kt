@@ -16,6 +16,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
@@ -67,6 +68,12 @@ class Networking {
             client.post("https://$url/register") {
                 contentType(ContentType.Application.Json)
                 setBody(Register(userid!!, key!!.encodeToByteArray(AES.Key.Format.RAW).encodeBase64()))
+            }
+        }
+
+        suspend fun ensureUserExists() {
+            if(getKey(userid!!) == null) {
+                register()
             }
         }
 

@@ -9,11 +9,8 @@ import android.content.Intent
 import android.location.LocationManager
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class BackgroundLocationService : Service() {
 
@@ -34,20 +31,26 @@ class BackgroundLocationService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun startUpdatingNotification() {
-        serviceJob = CoroutineScope(Dispatchers.IO).launch {
-            Networking.init()
+        val locationManager = getSystemService(LocationManager::class.java)
+        locationManager.requestLocationUpdates(
+            LocationManager.FUSED_PROVIDER,
+            SHARE_INTERVAL,
+            0F
+        ) {}
+        serviceJob = SuspendScope {
             if(platformObject == null)
                 platformObject = AndroidPlatform(this@BackgroundLocationService)
-            val locationManager = getSystemService(LocationManager::class.java)
+            Networking.init()
+            updateNotification("started")
             while(true) {
-                val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                val location = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER)
                 if(location != null) {
                     backgroundTask(
                         Coord(
                             location.latitude,
                             location.longitude
                         )
-                    ) { updateNotification(it.toString()) }
+                    )
                 }
                 delay(SHARE_INTERVAL)
             }

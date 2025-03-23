@@ -1,6 +1,5 @@
 package com.opengps.locationsharing
 
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -12,10 +11,6 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Entity
@@ -26,7 +21,8 @@ data class User(
     val photo: String?,
     var locationName: String,
     var receive: Boolean,
-    var send: Boolean
+    var send: Boolean,
+    var lastCoord: Coord? = null
 )
 
 class TC {
