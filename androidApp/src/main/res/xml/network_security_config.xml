@@ -3,6 +3,6 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.0.1</domain>
-        <domain includeSubdomains="true">light-rat-54.deno.dev</domain>
+        <domain includeSubdomains="true">2.56.246.186</domain>
     </domain-config>
 </network-security-config>

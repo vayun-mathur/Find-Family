@@ -11,7 +11,6 @@ import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -19,7 +18,6 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
@@ -27,7 +25,7 @@ import kotlin.random.nextULong
 
 class Networking {
     companion object {
-        private val url = "light-rat-54.deno.dev"
+        private val url = "2.56.246.186:8000"
 
         private val client = HttpClient() {
             install(ContentNegotiation) {
@@ -68,7 +66,7 @@ class Networking {
         private suspend fun register() {
             @Serializable
             data class Register(val userid: ULong, val key: String)
-            client.post("https://$url/register") {
+            client.post("http://$url/register") {
                 contentType(ContentType.Application.Json)
                 setBody(Register(userid!!, key!!.encodeToByteArray(AES.Key.Format.RAW).encodeBase64()))
             }
@@ -82,7 +80,7 @@ class Networking {
 
         private suspend fun getKey(userid: ULong): AES.CTR.Key? {
             try {
-                val response = client.post("https://$url/getkey") {
+                val response = client.post("http://$url/getkey") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")
                 }
@@ -98,7 +96,7 @@ class Networking {
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
             try {
                 val key = getKey(user.id) ?: return false
-                client.post("https://$url/location/publish") {
+                client.post("http://$url/location/publish") {
                     contentType(ContentType.Application.Json)
                     setBody(encryptLocation(location, user.id, key))
                 }
@@ -110,7 +108,7 @@ class Networking {
 
         suspend fun receiveLocations(): List<LocationValue>? {
             try {
-                val response = client.post("https://$url/location/receive") {
+                val response = client.post("http://$url/location/receive") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")
                 }

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LocationValue(val userid: ULong, val coord: Coord, val acc: Float, val timestamp: Long, val battery: Float)
 
-var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
+var locations by mutableStateOf(mutableMapOf<ULong, MutableList<LocationValue>>())
 var latestLocations by mutableStateOf(mutableMapOf<ULong, LocationValue>())
 var location by mutableStateOf<LocationValue?>(null)
 
@@ -29,7 +29,11 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     location = locationValue
     val recievedLocations = Networking.receiveLocations() ?: return
-    locations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }.toMutableMap()
+    val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }.toMutableMap()
+    for ((key, value) in newLocations) {
+        // If the key already exists, add the new list values to the existing list
+        locations.getOrPut(key) { mutableListOf() } += value
+    }
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
     println(latestLocations)
     for((userid, locationHistory) in locations) {
