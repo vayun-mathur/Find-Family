@@ -14,6 +14,8 @@ abstract class Platform {
 
     abstract fun runBackgroundService()
     abstract fun createNotification(s: String, channelId: String)
+
+    abstract val batteryLevel: Float
 }
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =

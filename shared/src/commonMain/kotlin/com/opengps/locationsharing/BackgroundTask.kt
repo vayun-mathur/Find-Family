@@ -7,7 +7,7 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LocationValue(val userid: ULong, val coord: Coord, val acc: Float, val timestamp: Long)
+data class LocationValue(val userid: ULong, val coord: Coord, val acc: Float, val timestamp: Long, val battery: Float)
 
 var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mutableMapOf<ULong, LocationValue>())
@@ -28,15 +28,25 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     location = locationValue
-    locations = (
-            Networking.receiveLocations()
-            ).groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }.toMutableMap()
+    val recievedLocations = Networking.receiveLocations() ?: return
+    locations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }.toMutableMap()
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
     println(latestLocations)
     for((userid, locationHistory) in locations) {
         if(userid == Networking.userid) continue
         val user = users.first{it.id == userid}
         val latest = locationHistory.last()
+
+        // battery level
+        if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {
+            platform.createNotification(
+                "${user.name} is running low on battery",
+                "BATTERY_LOW"
+            )
+        }
+        user.lastBatteryLevel = latest.battery
+
+        // enter or exit waypoints
         val wpIn = waypoints.find { havershine(it.coord, latest.coord) < it.range }
         if(wpIn != null) {
             val wasInEarlier = havershine(user.lastCoord?:Coord(0.0,0.0), wpIn.coord) < wpIn.range
@@ -93,6 +103,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 // will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord) {
     if(Networking.userid == null) return
-    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), 1.0f, Clock.System.now().toEpochMilliseconds())
+    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), 1.0f, Clock.System.now().toEpochMilliseconds(), getPlatform().batteryLevel)
     locationBackend(locationValue)
 }

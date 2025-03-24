@@ -7,11 +7,14 @@ import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.AES
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.decodeBase64Bytes
@@ -78,32 +81,47 @@ class Networking {
         }
 
         private suspend fun getKey(userid: ULong): AES.CTR.Key? {
-            val response = client.post("https://$url/getkey") {
-                contentType(ContentType.Application.Json)
-                setBody("{\"userid\": $userid}")
-            }
-            if(response.status.value != 200) {
+            try {
+                val response = client.post("https://$url/getkey") {
+                    contentType(ContentType.Application.Json)
+                    setBody("{\"userid\": $userid}")
+                }
+                if(response.status != HttpStatusCode.OK) {
+                    return null
+                }
+                return crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, response.bodyAsText().decodeBase64Bytes())
+            } catch(e: SocketTimeoutException) {
                 return null
             }
-            return crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, response.bodyAsText().decodeBase64Bytes())
         }
 
-        suspend fun publishLocation(location: LocationValue, user: User) {
-            val key = getKey(user.id) ?: return
-            client.post("https://$url/location/publish") {
-                contentType(ContentType.Application.Json)
-                setBody(encryptLocation(location, user.id, key))
+        suspend fun publishLocation(location: LocationValue, user: User): Boolean {
+            try {
+                val key = getKey(user.id) ?: return false
+                client.post("https://$url/location/publish") {
+                    contentType(ContentType.Application.Json)
+                    setBody(encryptLocation(location, user.id, key))
+                }
+                return true
+            } catch(e: SocketTimeoutException) {
+                return false
             }
         }
 
-        suspend fun receiveLocations(): List<LocationValue> {
-            val response = client.post("https://$url/location/receive") {
-                contentType(ContentType.Application.Json)
-                setBody("{\"userid\": $userid}")
+        suspend fun receiveLocations(): List<LocationValue>? {
+            try {
+                val response = client.post("https://$url/location/receive") {
+                    contentType(ContentType.Application.Json)
+                    setBody("{\"userid\": $userid}")
+                }
+                if(response.status != HttpStatusCode.OK) return null
+                println(response.bodyAsText())
+                val locationsEncrypted = response.body<List<String>>()
+                val locations = locationsEncrypted.map { decryptLocation(it) }
+                return locations
+            } catch(e: SocketTimeoutException) {
+                return null
             }
-            val locationsEncrypted = response.body<List<String>>()
-            val locations = locationsEncrypted.map { decryptLocation(it) }
-            return locations
         }
 
         private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: AES.CTR.Key): LocationSharingData {

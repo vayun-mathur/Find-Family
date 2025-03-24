@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "00ef25e35f9a4dcf791ca490f449e6b1",
+    "identityHash": "0d920a8b73779c7ba0eb37cc46dcb97e",
     "entities": [
       {
         "tableName": "Waypoint",
@@ -42,7 +42,7 @@
       },
       {
         "tableName": "User",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `photo` TEXT, `locationName` TEXT NOT NULL, `receive` INTEGER NOT NULL, `send` INTEGER NOT NULL, `lastCoord` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `photo` TEXT, `locationName` TEXT NOT NULL, `receive` INTEGER NOT NULL, `send` INTEGER NOT NULL, `lastBatteryLevel` REAL, `lastCoord` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -80,6 +80,11 @@
             "notNull": true
           },
           {
+            "fieldPath": "lastBatteryLevel",
+            "columnName": "lastBatteryLevel",
+            "affinity": "REAL"
+          },
+          {
             "fieldPath": "lastCoord",
             "columnName": "lastCoord",
             "affinity": "TEXT"
@@ -95,7 +100,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '00ef25e35f9a4dcf791ca490f449e6b1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0d920a8b73779c7ba0eb37cc46dcb97e')"
     ]
   }
 }

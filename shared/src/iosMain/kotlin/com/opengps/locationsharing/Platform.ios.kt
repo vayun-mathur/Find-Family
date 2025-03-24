@@ -20,6 +20,7 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIApplication
+import platform.UIKit.UIDevice
 import platform.UIKit.UINavigationController
 import platform.UIKit.UITabBarController
 import platform.UIKit.UIViewController
@@ -88,6 +89,7 @@ class IOSPlatform: Platform() {
 
     override fun runBackgroundService() {
         BackgroundService()
+        UIDevice.currentDevice.batteryMonitoringEnabled = true
     }
 
     override fun createNotification(s: String, channelId: String) {
@@ -109,6 +111,9 @@ class IOSPlatform: Platform() {
             notificationCenter.addNotificationRequest(request, null)
         }
     }
+
+    override val batteryLevel: Float
+        get() = UIDevice.currentDevice.batteryLevel * 100
 }
 
 @OptIn(ExperimentalForeignApi::class)

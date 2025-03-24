@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -51,7 +53,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
@@ -103,11 +107,11 @@ val state = MapState(maxLevel + 1, mapSize, mapSize, workerCount = 16).apply {
 }
 
 @Composable
-fun UserPicture(user: User) {
+fun UserPicture(user: User, size: Dp) {
     if(user.photo != null) {
-        AsyncImage(user.photo, null, Modifier.clip(CircleShape).size(50.dp).border(2.dp, Color.Black, CircleShape), contentScale = ContentScale.FillWidth)
+        AsyncImage(user.photo, null, Modifier.clip(CircleShape).size(size).border(2.dp, Color.Black, CircleShape), contentScale = ContentScale.FillWidth)
     } else {
-        Box(Modifier.clip(CircleShape).size(50.dp).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape).background(Color.Green)) {
+        Box(Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape).background(Color.Green)) {
             Text(user.name.first().toString(), Modifier.align(Alignment.Center), color = Color.White)
         }
     }
@@ -168,7 +172,7 @@ fun MapView() {
         val loc = latestLocations[user.id]?: return
         val res = doProjection(loc.coord)
         state.addMarker(user.id.toString(), res.first, res.second, relativeOffset = Offset(-0.5f, -0.5f)) {
-            UserPicture(user)
+            UserPicture(user, 50.dp)
         }
     }
 
@@ -232,7 +236,13 @@ fun MapView() {
             }
 
             ListItem(
-                leadingContent = {UserPicture(user)},
+                leadingContent = {
+                    Column(Modifier.width(65.dp)) {
+                        UserPicture(user, 65.dp)
+                        Spacer(Modifier.height(4.dp))
+                        BatteryBar(user.lastBatteryLevel?:100f)
+                    }
+                                 },
                 headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) },
                 supportingContent = if(showSupportingContent) {
                     {Text("At ${user.locationName}\nUpdated $lastUpdatedTime")}
@@ -266,7 +276,8 @@ fun MapView() {
                 val res = doProjection(location.coord)
                 state.moveMarker(id.toString(), res.first, res.second)
             } else {
-                addUserMarker(users[id]!!)
+                if(users[id] != null)
+                    addUserMarker(users[id]!!)
             }
             if(users[id] != null) {
                 val waypointOverlap = waypoints.values.firstOrNull { waypoint ->
@@ -591,5 +602,42 @@ fun BasicDialog(enable: Boolean, dismiss: () -> Unit, content: @Composable Colum
                 }
             }
         }
+    }
+}
+
+@Composable
+fun BatteryBar(batteryPercentage: Float) {
+    // Make sure percentage is between 0 and 100
+    val clampedPercentage = batteryPercentage.coerceIn(0.0f, 100f)
+    val width = 30.dp
+    val height = 15.dp
+
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Box(
+            modifier = Modifier
+                .width(width) // Width of the battery bar
+                .height(height) // Height of the battery bar
+                .border(
+                    2.dp,
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(4.dp)
+                ) // Border to represent the battery outline
+        ) {
+            // Battery fill based on percentage
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width((width * (clampedPercentage / 100f))) // Fill the width based on percentage
+                    .background(
+                        color = when {
+                            clampedPercentage > 60 -> Color.Green // Full/High Battery
+                            clampedPercentage > 20 -> Color.Yellow // Medium Battery
+                            else -> Color.Red // Low Battery
+                        },
+                        shape = RoundedCornerShape(4.dp)
+                    )
+            )
+        }
+        Text("${clampedPercentage.toInt()}%", fontSize = 12.sp)
     }
 }

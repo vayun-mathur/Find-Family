@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,6 +57,14 @@ class AndroidPlatform(private val context: Context): Platform() {
         val notificationManager = getSystemService(context, NotificationManager::class.java)!!
         notificationManager.notify(Random.nextInt(), notification)
     }
+
+    override val batteryLevel: Float
+        get() {
+            val batteryStatus: Intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))!!
+            val level: Int = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale: Int = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            return level * 100f / scale
+        }
 
 }
 

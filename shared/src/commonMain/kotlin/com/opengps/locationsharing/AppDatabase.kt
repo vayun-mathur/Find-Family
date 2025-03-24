@@ -22,6 +22,7 @@ data class User(
     var locationName: String,
     var receive: Boolean,
     var send: Boolean,
+    var lastBatteryLevel: Float? = null,
     var lastCoord: Coord? = null
 )
 
