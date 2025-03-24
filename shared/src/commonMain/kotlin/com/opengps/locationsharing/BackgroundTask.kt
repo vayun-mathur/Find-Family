@@ -34,6 +34,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
     println(latestLocations)
     for((userid, locationHistory) in locations) {
+        if(userid == Networking.userid) continue
         val user = users.first{it.id == userid}
         val latest = locationHistory.last()
         val wpIn = waypoints.find { havershine(it.coord, latest.coord) < it.range }
@@ -47,7 +48,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 }
                 if(confirmCount.getOrPut(userid){0u} == CONFIRMATIONS_REQUIRED) {
                     platform.createNotification(
-                        "${user.name} entered waypoint ${wpIn.name}",
+                        "${user.name} entered ${wpIn.name}",
                         "WAYPOINT_ENTER_EXIT"
                     )
                     confirmCount[userid] = 0u
@@ -71,7 +72,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 }
                 if(confirmCount.getOrPut(userid){0u} == CONFIRMATIONS_REQUIRED) {
                     platform.createNotification(
-                        "Exited waypoint ${wasInEarlier.name}",
+                        "${user.name} left ${wasInEarlier.name}",
                         "WAYPOINT_ENTER_EXIT"
                     )
                     confirmCount[userid] = 0u

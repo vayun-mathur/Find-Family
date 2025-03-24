@@ -15,7 +15,6 @@ fun BackgroundService() {
 
 @OptIn(ExperimentalForeignApi::class)
 fun onLocationUpdate(arg: CLLocation) {
-    println("location found" + Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
     val coords = arg.coordinate.useContents {
         Coord(this.latitude, this.longitude)
     }

@@ -4,12 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.driver.NativeSQLiteDriver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.delay
 import platform.Contacts.CNContact
 import platform.ContactsUI.CNContactPickerDelegateProtocol
 import platform.ContactsUI.CNContactPickerViewController
@@ -21,7 +23,18 @@ import platform.UIKit.UIApplication
 import platform.UIKit.UINavigationController
 import platform.UIKit.UITabBarController
 import platform.UIKit.UIViewController
+import platform.UserNotifications.UNAuthorizationOptionAlert
+import platform.UserNotifications.UNAuthorizationStatusAuthorized
+import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotification
+import platform.UserNotifications.UNNotificationPresentationOptionBanner
+import platform.UserNotifications.UNNotificationPresentationOptions
+import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNUserNotificationCenter
+import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
+import kotlin.random.Random
+import kotlin.uuid.Uuid
 
 class IOSPlatform: Platform() {
     @OptIn(ExperimentalForeignApi::class)
@@ -78,7 +91,23 @@ class IOSPlatform: Platform() {
     }
 
     override fun createNotification(s: String, channelId: String) {
-        //TODO: implement this later
+        val content = UNMutableNotificationContent()
+        content.setTitle(s)
+        val uuidString = Random.nextLong().toString()
+        val request = UNNotificationRequest.requestWithIdentifier(uuidString, content, null)
+        val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()
+        notificationCenter.delegate = object : NSObject(), UNUserNotificationCenterDelegateProtocol {
+            override fun userNotificationCenter(
+                center: UNUserNotificationCenter,
+                willPresentNotification: UNNotification,
+                withCompletionHandler: (UNNotificationPresentationOptions) -> Unit
+            ) {
+                withCompletionHandler(UNNotificationPresentationOptionBanner)
+            }
+        }
+        notificationCenter.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { _, _ ->
+            notificationCenter.addNotificationRequest(request, null)
+        }
     }
 }
 
