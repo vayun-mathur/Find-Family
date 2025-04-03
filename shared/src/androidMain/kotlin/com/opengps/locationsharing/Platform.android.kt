@@ -32,7 +32,7 @@ class AndroidPlatform(private val context: Context): Platform() {
             val cur = context.contentResolver.query(uri, null, null, null)!!
             if (cur.moveToFirst()) {
                 val name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-                val photo = cur.getStringOrNull(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI))
+                val photo = cur.getStringOrNull(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_URI))
                 callback(name, photo)
             }
             cur.close()

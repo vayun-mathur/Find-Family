@@ -3,6 +3,7 @@ package com.opengps.locationsharing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dev.jordond.compass.Location
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 

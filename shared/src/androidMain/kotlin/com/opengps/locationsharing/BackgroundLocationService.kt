@@ -38,12 +38,12 @@ class BackgroundLocationService : Service() {
             0F
         ) {}
         serviceJob = SuspendScope {
-            if(platformObject == null)
+            while(platformObject == null)
                 platformObject = AndroidPlatform(this@BackgroundLocationService)
             Networking.init()
             updateNotification("started")
             while(true) {
-                val location = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER)
+                val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 if(location != null) {
                     backgroundTask(
                         Coord(

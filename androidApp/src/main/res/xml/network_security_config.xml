@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">10.0.0.1</domain>
-        <domain includeSubdomains="true">2.56.246.186</domain>
+    <domain-config>
+        <domain includeSubdomains="true">api.findfamily.cc</domain>
+        <trust-anchors>
+            <certificates src="@raw/cert" />
+            <certificates src="@raw/rootcert" />
+        </trust-anchors>
     </domain-config>
 </network-security-config>
