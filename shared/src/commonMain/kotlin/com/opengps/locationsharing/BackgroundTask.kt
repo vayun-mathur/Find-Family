@@ -50,8 +50,9 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         }
         user.lastBatteryLevel = latest.battery
 
+        val waypointsSubset = waypoints.filter { !it.usersInactive.contains(userid) }
         // enter or exit waypoints
-        val wpIn = waypoints.find { havershine(it.coord, latest.coord) < it.range }
+        val wpIn = waypointsSubset.find { havershine(it.coord, latest.coord) < it.range }
         if(wpIn != null) {
             val wasInEarlier = havershine(user.lastCoord?:Coord(0.0,0.0), wpIn.coord) < wpIn.range
             if(!wasInEarlier) {
@@ -77,7 +78,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 platform.database.usersDao().upsert(user)
             }
         } else {
-            val wasInEarlier = waypoints.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
+            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
             if(wasInEarlier != null) {
                 // exited waypoints
                 if(confirmType.getOrPut(userid){"exit"} != "exit") {

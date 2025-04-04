@@ -46,6 +46,16 @@ class TC {
     fun toULong(value: Long): ULong {
         return value.toULong()
     }
+
+    @TypeConverter
+    fun fromULongList(value: MutableList<ULong>): String {
+        return value.joinToString(",")
+    }
+
+    @TypeConverter
+    fun toULongList(value: String): MutableList<ULong> {
+        return value.split(",").map { it.toULong() }.toMutableList()
+    }
 }
 
 @Entity
@@ -54,7 +64,8 @@ data class Waypoint(
     @PrimaryKey(autoGenerate = true) val id: ULong = 0uL,
     val name: String,
     val range: Double,
-    val coord: Coord
+    val coord: Coord,
+    val usersInactive: MutableList<ULong>
 )
 
 @Dao

@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -319,7 +320,7 @@ fun MapView(navController: NavHostController) {
                 {
                     val id = Random.nextULong()
                     waypoints[id] =
-                        Waypoint(id, waypointName, waypointRadius.toDouble(), longHeldPoint)
+                        Waypoint(id, waypointName, waypointRadius.toDouble(), longHeldPoint, mutableListOf())
                     SuspendScope {
                         platform.database.waypointDao().upsert(waypoints[id]!!)
                     }
@@ -527,6 +528,7 @@ fun MapView(navController: NavHostController) {
                     suffix = { Text("meters") },
                     readOnly = !editingWaypoint
                 )
+
                 OutlinedButton(
                     {
                         if (!editingWaypoint) {
@@ -546,7 +548,8 @@ fun MapView(navController: NavHostController) {
                                 selectedID!!,
                                 waypointNewName,
                                 waypointNewRadius.toDouble(),
-                                coord
+                                coord,
+                                mutableListOf()
                             )
                             SuspendScope {
                                 platform.database.waypointDao()
@@ -556,8 +559,37 @@ fun MapView(navController: NavHostController) {
                     },
                     enabled = !editingWaypoint || (waypointNewName.isNotEmpty() && waypointNewRadius.isPositiveNumber())
                 ) {
-                    Text(if (editingWaypoint) "Save" else "Edit")
+                    Text(if (editingWaypoint) "Save" else "Edit Name/Location")
                 }
+
+                if(!editingWaypoint)
+                    Card() {
+                        Column(Modifier.fillMaxWidth(0.8f)) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Waypoint Entry/Exit Notifications:", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            users.values.forEach { user ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Spacer(Modifier.width(16.dp))
+                                    Text(user.name)
+                                    Spacer(Modifier.weight(1f))
+                                    var checked by remember { mutableStateOf(waypoint.usersInactive.contains(user.id)) }
+                                    Checkbox(checked, {
+                                        checked = it
+                                        SuspendScope {
+                                            if(!checked) {
+                                                waypoint.usersInactive += user.id
+                                            } else {
+                                                waypoint.usersInactive -= user.id
+                                            }
+                                            platform.database.waypointDao().upsert(waypoint)
+                                        }
+                                    })
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
+                    }
             }
         }
         Spacer(Modifier.height(32.dp))
