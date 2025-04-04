@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
@@ -156,7 +157,7 @@ fun SuspendScope(block: suspend () -> Unit): Job {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapView() {
+fun MapView(navController: NavHostController) {
     val platform = getPlatform()
     val usersDao = platform.database.usersDao()
     val users = remember { mutableStateMapOf<ULong, User>() }
@@ -426,31 +427,8 @@ fun MapView() {
                     )
                 }
             }
-            Box {
-                var expanded by remember { mutableStateOf(false) }
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Default.Settings, null)
-                }
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    var useTor by remember { mutableStateOf(getPlatform().dataStoreUtils.getBooleanOrDefault("useTor", false)) }
-                    DropdownMenuItem(
-                        text = { Row(verticalAlignment = Alignment.CenterVertically) {
-                            Spacer(Modifier.width(16.dp))
-                            Text("Use Tor")
-                            Spacer(Modifier.weight(1f))
-                            Checkbox(useTor, { checked ->
-                                useTor = checked
-                                SuspendScope {
-                                    getPlatform().dataStoreUtils.setBoolean("useTor", useTor)
-                                }
-                            })
-                        } },
-                        onClick = { addPersonPopupEnabled = true; expanded = false }
-                    )
-                }
+            IconButton(onClick = { navController.navigate("settings") }) {
+                Icon(Icons.Default.Settings, null)
             }
         }
         if (selectedID != null) {
