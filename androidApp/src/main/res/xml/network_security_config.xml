@@ -2,6 +2,7 @@
 <network-security-config>
     <domain-config>
         <domain includeSubdomains="true">api.findfamily.cc</domain>
+        <domain includeSubdomains="true">d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion</domain>
         <trust-anchors>
             <certificates src="@raw/cert" />
             <certificates src="@raw/rootcert" />

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Card
@@ -438,6 +439,32 @@ fun MapView() {
                         DropdownMenuItem(
                             text = { Text("Add Saved Location") },
                             onClick = { addWaypointPopupEnable = true; expanded = false }
+                        )
+                    }
+                }
+                Box() {
+                    var expanded by remember { mutableStateOf(false) }
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.Settings, null)
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        var useTor by remember { mutableStateOf(getPlatform().dataStoreUtils.getBooleanOrDefault("useTor", false)) }
+                        DropdownMenuItem(
+                            text = { Row(verticalAlignment = Alignment.CenterVertically) {
+                                Spacer(Modifier.width(16.dp))
+                                Text("Use Tor")
+                                Spacer(Modifier.weight(1f))
+                                Checkbox(useTor, { checked ->
+                                    useTor = checked
+                                    SuspendScope {
+                                        getPlatform().dataStoreUtils.setBoolean("useTor", useTor)
+                                    }
+                                })
+                            } },
+                            onClick = { addPersonPopupEnabled = true; expanded = false }
                         )
                     }
                 }

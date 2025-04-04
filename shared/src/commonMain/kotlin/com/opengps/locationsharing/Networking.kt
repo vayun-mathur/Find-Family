@@ -1,16 +1,10 @@
 package com.opengps.locationsharing
 
-import androidx.datastore.preferences.core.byteArrayPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.AES
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.HttpRedirect
-import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
@@ -29,7 +23,9 @@ import kotlin.random.nextULong
 
 class Networking {
     companion object {
-        private const val url = "api.findfamily.cc"
+
+        private val url
+            get() = if(getPlatform().dataStoreUtils.getBoolean("useTor")!!) "d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "api.findfamily.cc"
 
         private val client = HttpClient() {
             install(ContentNegotiation) {
@@ -43,26 +39,20 @@ class Networking {
 
         private suspend fun getPrivateKey() {
             val platform = getPlatform()
-            val privateKeyKey = byteArrayPreferencesKey("privateKey")
-            val useridKey = longPreferencesKey("userid")
-            platform.dataStore.edit {
-                key = it[privateKeyKey]?.let { it1 ->
-                    crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, it1)
-                }
-                userid = it[useridKey]?.toULong()
-            }
-            if (key == null) {
+            key = platform.dataStoreUtils.getByteArray("privateKey")?.let {crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, it)}
+            userid = platform.dataStoreUtils.getLong("userid")?.toULong()
+            if(key == null) {
                 key = crypto.keyGenerator(AES.Key.Size.B256).generateKey()
                 userid = Random.nextULong()
-                platform.dataStore.edit {
-                    it[privateKeyKey] = key!!.encodeToByteArray(AES.Key.Format.RAW)
-                    it[useridKey] = userid!!.toLong()
-                }
+                platform.dataStoreUtils.setByteArray("privateKey", key!!.encodeToByteArray(AES.Key.Format.RAW))
+                platform.dataStoreUtils.setLong("userid", userid!!.toLong())
                 register()
             }
         }
 
         suspend fun init() {
+            getPlatform().dataStoreUtils.getBooleanOrDefault("useTor", false)
+
             if(key == null)
                 getPrivateKey()
         }

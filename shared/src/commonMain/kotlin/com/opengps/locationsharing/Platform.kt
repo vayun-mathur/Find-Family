@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.Preferences
 import okio.Path.Companion.toPath
 
 abstract class Platform {
+
     abstract val dataStore: DataStore<Preferences>
+    val dataStoreUtils = DataStoreUtils { this.dataStore }
     abstract val database: AppDatabase
     @Composable
     abstract fun requestPickContact(callback: (String, String?)->Unit): ()->Unit
