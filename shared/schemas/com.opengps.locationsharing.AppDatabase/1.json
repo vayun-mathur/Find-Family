@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "0d920a8b73779c7ba0eb37cc46dcb97e",
+    "identityHash": "0b603fdb71cfeb16eab8c430de937d9d",
     "entities": [
       {
         "tableName": "Waypoint",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `range` REAL NOT NULL, `coord` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `range` REAL NOT NULL, `coord` TEXT NOT NULL, `usersInactive` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -29,6 +29,12 @@
           {
             "fieldPath": "coord",
             "columnName": "coord",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usersInactive",
+            "columnName": "usersInactive",
             "affinity": "TEXT",
             "notNull": true
           }
@@ -100,7 +106,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0d920a8b73779c7ba0eb37cc46dcb97e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0b603fdb71cfeb16eab8c430de937d9d')"
     ]
   }
 }

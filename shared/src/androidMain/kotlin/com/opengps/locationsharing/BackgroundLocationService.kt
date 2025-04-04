@@ -37,6 +37,7 @@ class BackgroundLocationService : Service() {
             SHARE_INTERVAL,
             0F
         ) {}
+
         serviceJob = SuspendScope {
             while(platformObject == null)
                 platformObject = AndroidPlatform(this@BackgroundLocationService)

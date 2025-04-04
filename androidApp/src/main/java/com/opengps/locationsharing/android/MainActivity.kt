@@ -1,12 +1,17 @@
 package com.opengps.locationsharing.android
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import com.opengps.locationsharing.Main
+import com.opengps.locationsharing.getPlatform
 import com.opengps.locationsharing.platformObject
 
 class MainActivity : ComponentActivity() {
@@ -26,6 +31,16 @@ class MainActivity : ComponentActivity() {
             platformObject = com.opengps.locationsharing.AndroidPlatform(this)
 
         setContent {
+
+            val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                if(it) {
+                    getPlatform().runBackgroundService()
+                }
+            }
+            LaunchedEffect(Unit) {
+                launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+
             MyApplicationTheme {
                 Main()
             }

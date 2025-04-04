@@ -11,8 +11,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.PermissionChecker
 import androidx.core.database.getStringOrNull
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -44,7 +47,9 @@ class AndroidPlatform(private val context: Context): Platform() {
         .setDriver(AndroidSQLiteDriver()).build()
 
     override fun runBackgroundService() {
-        context.startForegroundService(Intent(context, BackgroundLocationService::class.java))
+        if(PermissionChecker.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PermissionChecker.PERMISSION_GRANTED) {
+            context.startForegroundService(Intent(context, BackgroundLocationService::class.java))
+        }
     }
 
     override fun createNotification(s: String, channelId: String) {
