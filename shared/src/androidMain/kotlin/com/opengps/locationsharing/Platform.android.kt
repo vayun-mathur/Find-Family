@@ -6,14 +6,13 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.ConnectivityManager
 import android.os.BatteryManager
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.PermissionChecker
@@ -22,6 +21,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import io.ktor.client.statement.HttpResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.NetworkInterface
+import java.net.UnknownHostException
 import kotlin.random.Random
 
 
@@ -73,6 +77,15 @@ class AndroidPlatform(private val context: Context): Platform() {
             .build()
         val notificationManager = getSystemService(context, NotificationManager::class.java)!!
         notificationManager.notify(Random.nextInt(), notification)
+    }
+
+    override suspend fun torDNSChecker(inner: suspend ()->HttpResponse): HttpResponse? {
+        return try {
+            inner()
+        } catch(e: UnknownHostException) {
+            println(e.message)
+            null
+        }
     }
 
     override val batteryLevel: Float

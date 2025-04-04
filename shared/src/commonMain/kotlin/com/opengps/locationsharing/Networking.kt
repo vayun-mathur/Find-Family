@@ -1,5 +1,7 @@
 package com.opengps.locationsharing
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.AES
 import io.ktor.client.HttpClient
@@ -7,6 +9,9 @@ import io.ktor.client.call.body
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -24,12 +29,19 @@ import kotlin.random.nextULong
 class Networking {
     companion object {
 
-        private val url
-            get() = if(getPlatform().dataStoreUtils.getBoolean("useTor")!!) "d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "api.findfamily.cc"
+        private fun getUrl() = if(getPlatform().dataStoreUtils.getBoolean("useTor") == true) "d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "api.findfamily.cc"
 
         private val client = HttpClient() {
             install(ContentNegotiation) {
                 json()
+            }
+            install(Logging) {
+                logger = object: Logger {
+                    override fun log(message: String) {
+                        println("KTOR: ", message)
+                    }
+                }
+                level = LogLevel.NONE
             }
         }
         private val crypto = CryptographyProvider.Default.get(AES.CTR)
@@ -51,7 +63,11 @@ class Networking {
         }
 
         suspend fun init() {
-            getPlatform().dataStoreUtils.getBooleanOrDefault("useTor", false)
+            getPlatform().dataStore.edit {
+                if(!it.contains(booleanPreferencesKey("useTor"))) {
+                    it[booleanPreferencesKey("useTor")] = false
+                }
+            }
 
             if(key == null)
                 getPrivateKey()
@@ -60,9 +76,16 @@ class Networking {
         private suspend fun register() {
             @Serializable
             data class Register(val userid: ULong, val key: String)
-            client.post("https://$url/register") {
-                contentType(ContentType.Application.Json)
-                setBody(Register(userid!!, key!!.encodeToByteArray(AES.Key.Format.RAW).encodeBase64()))
+            getPlatform().torDNSChecker {
+                client.post("https://${getUrl()}/register") {
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        Register(
+                            userid!!,
+                            key!!.encodeToByteArray(AES.Key.Format.RAW).encodeBase64()
+                        )
+                    )
+                }
             }
         }
 
@@ -74,15 +97,19 @@ class Networking {
 
         private suspend fun getKey(userid: ULong): AES.CTR.Key? {
             try {
-                val response = client.post("https://$url/getkey") {
+                println(getUrl())
+                val response = getPlatform().torDNSChecker { client.post("https://${getUrl()}/getkey") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")
-                }
+                } } ?: return null
                 if(response.status != HttpStatusCode.OK) {
                     return null
                 }
                 return crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, response.bodyAsText().decodeBase64Bytes())
             }  catch (e: ServerResponseException) {
+                return null
+            } catch(e: Exception) {
+                println("EXCEPTION ${e.message}")
                 return null
             }
         }
@@ -90,10 +117,10 @@ class Networking {
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
             try {
                 val key = getKey(user.id) ?: return false
-                client.post("https://$url/location/publish") {
+                getPlatform().torDNSChecker { client.post("https://${getUrl()}/location/publish") {
                     contentType(ContentType.Application.Json)
                     setBody(encryptLocation(location, user.id, key))
-                }
+                } } ?: return false
                 return true
             } catch(e: SocketTimeoutException) {
                 return false
@@ -102,10 +129,10 @@ class Networking {
 
         suspend fun receiveLocations(): List<LocationValue>? {
             try {
-                val response = client.post("https://$url/location/receive") {
+                val response = getPlatform().torDNSChecker { client.post("https://${getUrl()}/location/receive") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")
-                }
+                } } ?: return null
                 if(response.status != HttpStatusCode.OK) return null
                 println(response.bodyAsText())
                 val locationsEncrypted = response.body<List<String>>()

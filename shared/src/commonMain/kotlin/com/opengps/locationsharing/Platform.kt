@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import io.ktor.client.statement.HttpResponse
 import okio.Path.Companion.toPath
 
 abstract class Platform {
@@ -16,6 +17,8 @@ abstract class Platform {
 
     abstract fun runBackgroundService()
     abstract fun createNotification(s: String, channelId: String)
+
+    abstract suspend fun torDNSChecker(inner: suspend ()-> HttpResponse): HttpResponse?
 
     abstract val batteryLevel: Float
 }
