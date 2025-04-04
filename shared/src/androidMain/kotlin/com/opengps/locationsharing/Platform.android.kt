@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context
@@ -40,7 +41,18 @@ class AndroidPlatform(private val context: Context): Platform() {
             }
             cur.close()
         }
-        return {launcher.launch()}
+        val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            if(it) {
+                launcher.launch()
+            }
+        }
+        return {
+            if(PermissionChecker.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PermissionChecker.PERMISSION_GRANTED) {
+                launcher.launch()
+            } else {
+                permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+            }
+        }
     }
 
     override val database = Room.databaseBuilder(context, AppDatabase::class.java, "database.db")
