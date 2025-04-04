@@ -54,6 +54,7 @@ class TC {
 
     @TypeConverter
     fun toULongList(value: String): MutableList<ULong> {
+        if(value == "") return mutableListOf()
         return value.split(",").map { it.toULong() }.toMutableList()
     }
 }

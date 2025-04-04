@@ -15,12 +15,12 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
 
     init {
         SuspendScope {
-            while(dataStore() == null) {
-                delay(100)
-            }
-            dataStore().data.collect({
+            delay(100)
+            dataStore().data.collect {
                 stateMap = it.asMap()
-            })
+                println("STATE UPDATE")
+                println(stateMap)
+            }
         }
     }
 
@@ -28,15 +28,9 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
         return stateMap[stringPreferencesKey(name)] as String?
     }
 
-    fun getStringOrDefault(name: String, default: String): String {
-        return stateMap[stringPreferencesKey(name)] as String? ?: run {
-            SuspendScope { setString(name, default) }
-            default
-        }
-    }
-
-    suspend fun setString(name: String, value: String) {
+    suspend fun setString(name: String, value: String, onlyIfAbsent: Boolean = false) {
         dataStore().edit {
+            if(onlyIfAbsent && it.contains(stringPreferencesKey(name))) return@edit
             it[stringPreferencesKey(name)] = value
         }
     }
@@ -45,15 +39,9 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
         return stateMap[stringPreferencesKey(name)] as ByteArray?
     }
 
-    fun getByteArrayOrDefault(name: String, default: ByteArray): ByteArray {
-        return stateMap[byteArrayPreferencesKey(name)] as ByteArray? ?: run {
-            SuspendScope { setByteArray(name, default) }
-            default
-        }
-    }
-
-    suspend fun setByteArray(name: String, value: ByteArray) {
+    suspend fun setByteArray(name: String, value: ByteArray, onlyIfAbsent: Boolean = false) {
         dataStore().edit {
+            if(onlyIfAbsent && it.contains(byteArrayPreferencesKey(name))) return@edit
             it[byteArrayPreferencesKey(name)] = value
         }
     }
@@ -62,15 +50,9 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
         return stateMap[booleanPreferencesKey(name)] as Boolean?
     }
 
-    fun getBooleanOrDefault(name: String, default: Boolean): Boolean {
-        return stateMap[booleanPreferencesKey(name)] as Boolean? ?: run {
-            SuspendScope { setBoolean(name, default) }
-            default
-        }
-    }
-
-    suspend fun setBoolean(name: String, value: Boolean) {
+    suspend fun setBoolean(name: String, value: Boolean, onlyIfAbsent: Boolean = false) {
         dataStore().edit {
+            if(onlyIfAbsent && it.contains(booleanPreferencesKey(name))) return@edit
             it[booleanPreferencesKey(name)] = value
         }
     }
@@ -79,15 +61,9 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
         return stateMap[longPreferencesKey(name)] as Long?
     }
 
-    fun getLongOrDefault(name: String, default: Long): Long {
-        return stateMap[longPreferencesKey(name)] as Long? ?: run {
-            SuspendScope { setLong(name, default) }
-            default
-        }
-    }
-
-    suspend fun setLong(s: String, userid: Long) {
+    suspend fun setLong(s: String, userid: Long, onlyIfAbsent: Boolean = false) {
         dataStore().edit {
+            if(onlyIfAbsent && it.contains(longPreferencesKey(s))) return@edit
             it[longPreferencesKey(s)] = userid
         }
     }

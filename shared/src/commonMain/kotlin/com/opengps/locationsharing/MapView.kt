@@ -218,6 +218,33 @@ fun MapView(navController: NavHostController) {
     }
 
     @Composable
+    fun WaypointCard(waypoint: Waypoint) {
+        Card(Modifier.clickable {
+            selectedID = waypoint.id
+            SuspendScope {
+                state.centerOnMarker(waypoint.id.toString())
+            }
+        }) {
+            var usersString by remember { mutableStateOf("") }
+            LaunchedEffect(Unit) {
+                while(true) {
+                    val usersWithin = users.values.filter { it.locationName == waypoint.name }
+                    usersString = usersWithin.joinToString { it.name } + when(usersWithin.size) {
+                        0 -> "nobody is"
+                        1 -> " is"
+                        else -> " are"
+                    } + " currently here"
+                    delay(1000)
+                }
+            }
+            ListItem(
+                headlineContent = { Text(waypoint.name, fontWeight = FontWeight.Bold) },
+                supportingContent = { Text(usersString) }
+            )
+        }
+    }
+
+    @Composable
     fun UserCard(user: User, showSupportingContent: Boolean) {
         Card(Modifier.clickable {
             selectedID = user.id
@@ -453,7 +480,10 @@ fun MapView(navController: NavHostController) {
         }
     }, sheetContent = {
         if (selectedID == null) {
-            users.values.forEach { UserCard(it, true) }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                users.values.forEach { UserCard(it, true) }
+                waypoints.values.forEach { WaypointCard(it) }
+            }
         } else if (users[selectedID] != null) {
             UserCard(users[selectedID]!!, true)
             Spacer(Modifier.height(4.dp))

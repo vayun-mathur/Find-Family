@@ -1,7 +1,5 @@
 package com.opengps.locationsharing
 
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.AES
 import io.ktor.client.HttpClient
@@ -9,9 +7,6 @@ import io.ktor.client.call.body
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -21,10 +16,10 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
-import kotlin.random.nextULong
 
 class Networking {
     companion object {
@@ -35,42 +30,21 @@ class Networking {
             install(ContentNegotiation) {
                 json()
             }
-            install(Logging) {
-                logger = object: Logger {
-                    override fun log(message: String) {
-                        println("KTOR: ", message)
-                    }
-                }
-                level = LogLevel.NONE
-            }
         }
         private val crypto = CryptographyProvider.Default.get(AES.CTR)
         private var key: AES.CTR.Key? = null
         var userid: ULong? = null
             private set
 
-        private suspend fun getPrivateKey() {
-            val platform = getPlatform()
-            key = platform.dataStoreUtils.getByteArray("privateKey")?.let {crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, it)}
-            userid = platform.dataStoreUtils.getLong("userid")?.toULong()
-            if(key == null) {
-                key = crypto.keyGenerator(AES.Key.Size.B256).generateKey()
-                userid = Random.nextULong()
-                platform.dataStoreUtils.setByteArray("privateKey", key!!.encodeToByteArray(AES.Key.Format.RAW))
-                platform.dataStoreUtils.setLong("userid", userid!!.toLong())
-                register()
-            }
-        }
-
         suspend fun init() {
-            getPlatform().dataStore.edit {
-                if(!it.contains(booleanPreferencesKey("useTor"))) {
-                    it[booleanPreferencesKey("useTor")] = false
-                }
-            }
+            val platform = getPlatform()
+            platform.dataStoreUtils.setByteArray("privateKey", crypto.keyGenerator(AES.Key.Size.B256).generateKey().encodeToByteArray(AES.Key.Format.RAW), true)
+            platform.dataStoreUtils.setLong("userid", Random.nextLong(), true)
+            platform.dataStoreUtils.setBoolean("useTor", false, true)
 
-            if(key == null)
-                getPrivateKey()
+            delay(100)
+            key = crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, platform.dataStoreUtils.getByteArray("privateKey")!!)
+            userid = platform.dataStoreUtils.getLong("userid")!!.toULong()
         }
 
         private suspend fun register() {
