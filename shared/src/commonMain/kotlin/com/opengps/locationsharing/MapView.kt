@@ -334,13 +334,13 @@ fun MapView(navController: NavHostController) {
         OutlinedTextField(
             waypointName,
             { waypointName = it },
-            label = { Text("Waypoint Name") })
+            label = { Text("Saved Place Name") })
 
         var waypointRadius by remember { mutableStateOf("") }
         OutlinedTextField(
             waypointRadius,
             { waypointRadius = it },
-            label = { Text("Waypoint Range (Radius)") }, suffix = { Text("meters") })
+            label = { Text("Saved Place Range (Radius)") }, suffix = { Text("meters") })
 
         Row {
             OutlinedButton(
@@ -407,13 +407,13 @@ fun MapView(navController: NavHostController) {
         var send by remember { mutableStateOf(true) }
         Column() {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Receive")
+                Text("Show on Map")
                 Spacer(Modifier.weight(1f))
                 Checkbox(receive, { receive = it })
             }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Send")
+                Text("Share your location")
                 Spacer(Modifier.weight(1f))
                 Checkbox(send, { send = it })
             }
@@ -469,7 +469,7 @@ fun MapView(navController: NavHostController) {
                 }, actions = actions)
             } else {
                 val waypoint = waypoints[selectedID]!!
-                TopAppBar(title = { Text("Waypoint: " + waypoint.name) }, navigationIcon = {
+                TopAppBar(title = { Text("Saved Place: " + waypoint.name) }, navigationIcon = {
                     IconButton(onClick = { selectedID = null }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
@@ -494,7 +494,7 @@ fun MapView(navController: NavHostController) {
                 Card() {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Receive")
+                            Text("Show on Map")
                             Spacer(Modifier.weight(1f))
                             Checkbox(
                                 users[selectedID]!!.receive,
@@ -506,7 +506,7 @@ fun MapView(navController: NavHostController) {
                         }
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Send")
+                            Text("Share your location")
                             Spacer(Modifier.weight(1f))
                             Checkbox(
                                 users[selectedID]!!.send,
@@ -546,7 +546,7 @@ fun MapView(navController: NavHostController) {
                 OutlinedTextField(
                     waypointNewName,
                     { waypointNewName = it },
-                    label = { Text("Waypoint Name") },
+                    label = { Text("Saved Place Name") },
                     readOnly = !editingWaypoint
                 )
                 OutlinedTextField(waypointNewRadius,
@@ -554,7 +554,7 @@ fun MapView(navController: NavHostController) {
                         waypointNewRadius = it
                         if (it.isPositiveNumber()) editingWaypointRadius = it.toDouble()
                     },
-                    label = { Text("Waypoint Range (Radius)") },
+                    label = { Text("Saved Place Range (Radius)") },
                     suffix = { Text("meters") },
                     readOnly = !editingWaypoint
                 )
@@ -596,7 +596,7 @@ fun MapView(navController: NavHostController) {
                     Card() {
                         Column(Modifier.fillMaxWidth(0.8f)) {
                             Spacer(Modifier.height(8.dp))
-                            Text("Waypoint Entry/Exit Notifications:", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
+                            Text("Saved Place Entry/Exit Notifications:", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.height(8.dp))
                             users.values.forEach { user ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
