@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -405,6 +406,53 @@ fun MapView() {
         }
     }
     BottomSheetScaffold(topBar = {
+        val actions:  @Composable RowScope.() -> Unit = {
+            Box {
+                var expanded by remember { mutableStateOf(false) }
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Default.Add, null)
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Add Person") },
+                        onClick = { addPersonPopupEnabled = true; expanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Add Saved Location") },
+                        onClick = { addWaypointPopupEnable = true; expanded = false }
+                    )
+                }
+            }
+            Box {
+                var expanded by remember { mutableStateOf(false) }
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Default.Settings, null)
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    var useTor by remember { mutableStateOf(getPlatform().dataStoreUtils.getBooleanOrDefault("useTor", false)) }
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) {
+                            Spacer(Modifier.width(16.dp))
+                            Text("Use Tor")
+                            Spacer(Modifier.weight(1f))
+                            Checkbox(useTor, { checked ->
+                                useTor = checked
+                                SuspendScope {
+                                    getPlatform().dataStoreUtils.setBoolean("useTor", useTor)
+                                }
+                            })
+                        } },
+                        onClick = { addPersonPopupEnabled = true; expanded = false }
+                    )
+                }
+            }
+        }
         if (selectedID != null) {
             if (users[selectedID] != null) {
                 val user = users[selectedID]!!
@@ -412,63 +460,17 @@ fun MapView() {
                     IconButton(onClick = { selectedID = null }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
-                })
+                }, actions = actions)
             } else {
                 val waypoint = waypoints[selectedID]!!
                 TopAppBar(title = { Text("Waypoint: " + waypoint.name) }, navigationIcon = {
                     IconButton(onClick = { selectedID = null }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
-                })
+                }, actions = actions)
             }
         } else {
-            TopAppBar(title = { Text("Location Sharing") }, actions = {
-                Box() {
-                    var expanded by remember { mutableStateOf(false) }
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.Add, null)
-                    }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Add Person") },
-                            onClick = { addPersonPopupEnabled = true; expanded = false }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Add Saved Location") },
-                            onClick = { addWaypointPopupEnable = true; expanded = false }
-                        )
-                    }
-                }
-                Box() {
-                    var expanded by remember { mutableStateOf(false) }
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.Settings, null)
-                    }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        var useTor by remember { mutableStateOf(getPlatform().dataStoreUtils.getBooleanOrDefault("useTor", false)) }
-                        DropdownMenuItem(
-                            text = { Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(Modifier.width(16.dp))
-                                Text("Use Tor")
-                                Spacer(Modifier.weight(1f))
-                                Checkbox(useTor, { checked ->
-                                    useTor = checked
-                                    SuspendScope {
-                                        getPlatform().dataStoreUtils.setBoolean("useTor", useTor)
-                                    }
-                                })
-                            } },
-                            onClick = { addPersonPopupEnabled = true; expanded = false }
-                        )
-                    }
-                }
-            })
+            TopAppBar(title = { Text("Location Sharing") }, actions = actions)
         }
     }, sheetContent = {
         if (selectedID == null) {
