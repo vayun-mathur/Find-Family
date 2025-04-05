@@ -38,12 +38,12 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             //location
-            implementation(libs.compass.geolocation)
-            implementation(libs.compass.geolocation.mobile)
+            implementation(libs.compass.geocoder)
+            implementation(libs.compass.geocoder.mobile)
             implementation(libs.compass.permissions.mobile)
 
             implementation(libs.androidx.room.runtime)
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            implementation(libs.kotlinx.datetime)
             implementation(libs.navigation.compose)
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -61,16 +61,16 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
-            implementation("androidx.datastore:datastore-preferences-core:1.1.3")
-            implementation("dev.whyoleg.cryptography:cryptography-core:0.4.0")
+            implementation(libs.androidx.datastore.preferences.core)
+            implementation(libs.cryptography.core)
 
-            implementation("io.coil-kt.coil3:coil-compose:3.1.0")
-            implementation("io.coil-kt.coil3:coil-network-ktor3:3.1.0")
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
 
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
-            implementation("dev.whyoleg.cryptography:cryptography-provider-jdk:0.4.0")
+            implementation(libs.cryptography.provider.jdk)
 
             implementation(libs.androidx.activity)
             implementation(libs.androidx.activity.ktx)
@@ -79,8 +79,8 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
-            implementation("dev.whyoleg.cryptography:cryptography-provider-apple:0.4.0")
-            implementation("androidx.sqlite:sqlite-bundled:2.5.0-rc02")
+            implementation(libs.cryptography.provider.apple)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

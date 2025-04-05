@@ -35,7 +35,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         locations.getOrPut(key) { mutableListOf() } += value
     }
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
-    println(recievedLocations)
     println(latestLocations)
     for((userid, locationHistory) in locations) {
         if(userid == Networking.userid) continue

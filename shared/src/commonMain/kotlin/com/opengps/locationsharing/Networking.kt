@@ -71,7 +71,6 @@ class Networking {
 
         private suspend fun getKey(userid: ULong): AES.CTR.Key? {
             try {
-                println(getUrl())
                 val response = getPlatform().torDNSChecker { client.post("https://${getUrl()}/getkey") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")

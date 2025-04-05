@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import dev.jordond.compass.geocoder.Geocoder
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.request.get
@@ -77,7 +78,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
-import kotlinx.datetime.format.DateTimeFormatBuilder
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.toLocalDateTime
@@ -105,7 +105,6 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.random.nextULong
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -354,7 +353,9 @@ fun MapView(navController: NavHostController) {
                 val waypointOverlap = waypoints.values.firstOrNull { waypoint ->
                     havershine(location.coord, waypoint.coord) < waypoint.range
                 }
-                val newLocationName = waypointOverlap?.name?: "Unnamed Location"
+                val newLocationName = waypointOverlap?.name?: (
+                        Geocoder().reverse(location.coord.lat, location.coord.lon).getFirstOrNull()?.name?:"Unnamed Location"
+                        )
                 if(users[id]!!.locationName != newLocationName) {
                     users[id]!!.locationName = newLocationName
                     users[id]!!.lastLocationChangeTime = Clock.System.now()
@@ -647,7 +648,7 @@ fun MapView(navController: NavHostController) {
                                     Spacer(Modifier.width(16.dp))
                                     Text(user.name)
                                     Spacer(Modifier.weight(1f))
-                                    var checked by remember { mutableStateOf(waypoint.usersInactive.contains(user.id)) }
+                                    var checked by remember { mutableStateOf(!waypoint.usersInactive.contains(user.id)) }
                                     Checkbox(checked, {
                                         checked = it
                                         SuspendScope {
@@ -664,6 +665,16 @@ fun MapView(navController: NavHostController) {
                             }
                         }
                     }
+
+                OutlinedButton({
+                    SuspendScope {
+                        platform.database.waypointDao().delete(selectedID!!.toLong())
+                        waypoints.remove(selectedID!!)
+                        selectedID = null
+                    }
+                }) {
+                    Text("Delete Saved Place")
+                }
             }
         }
         Spacer(Modifier.height(32.dp))
