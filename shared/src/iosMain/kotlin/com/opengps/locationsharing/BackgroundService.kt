@@ -3,8 +3,6 @@ package com.opengps.locationsharing
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import platform.CoreLocation.CLLocation
 
 private var last_time: Long = 0
@@ -20,6 +18,6 @@ fun onLocationUpdate(arg: CLLocation) {
     }
     if(Clock.System.now().toEpochMilliseconds() - last_time > SHARE_INTERVAL) {
         last_time = Clock.System.now().toEpochMilliseconds()
-        SuspendScope { backgroundTask(coords) }
+        SuspendScope { backgroundTask(coords, arg.speed.toFloat()) }
     }
 }

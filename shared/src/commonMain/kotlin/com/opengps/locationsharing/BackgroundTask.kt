@@ -7,7 +7,7 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LocationValue(val userid: ULong, val coord: Coord, val acc: Float, val timestamp: Long, val battery: Float)
+data class LocationValue(val userid: ULong, val coord: Coord, val speed: Float, val acc: Float, val timestamp: Long, val battery: Float)
 
 var locations by mutableStateOf(mutableMapOf<ULong, MutableList<LocationValue>>())
 var latestLocations by mutableStateOf(mutableMapOf<ULong, LocationValue>())
@@ -109,8 +109,8 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 }
 
 // will be called every SHARE_INTERVAL
-suspend fun backgroundTask(location: Coord) {
+suspend fun backgroundTask(location: Coord, speed: Float) {
     if(Networking.userid == null) return
-    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), 1.0f, Clock.System.now().toEpochMilliseconds(), getPlatform().batteryLevel)
+    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), getPlatform().batteryLevel)
     locationBackend(locationValue)
 }

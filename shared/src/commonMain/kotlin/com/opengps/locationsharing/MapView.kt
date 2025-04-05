@@ -265,21 +265,21 @@ fun MapView(navController: NavHostController) {
         }) {
             var lastUpdatedTime by remember { mutableStateOf("") }
             var sinceString by remember { mutableStateOf("") }
+            var speed by remember { mutableStateOf(0.0F) }
             LaunchedEffect(Unit) {
                 while(true) {
                     if(latestLocations.containsKey(user.id)) {
-                        lastUpdatedTime = if (latestLocations[user.id]?.timestamp != null) {
-                            timestring(latestLocations[user.id]!!.timestamp)
-                        } else {
-                            "Never"
-                        }
+                        speed = latestLocations[user.id]!!.speed
+                        lastUpdatedTime = timestring(latestLocations[user.id]!!.timestamp)
+                    } else {
+                        lastUpdatedTime = "Never"
                     }
                     val sinceTime = users[user.id]!!.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
                     val timeSinceEntry = Clock.System.now() - users[user.id]!!.lastLocationChangeTime
                     if(timeSinceEntry < 60.seconds) {
-                        sinceString = "since just now"
+                        sinceString = "Since just now"
                     } else if(timeSinceEntry < 15.minutes) {
-                        sinceString = "since ${timeSinceEntry.inWholeMinutes} minutes ago"
+                        sinceString = "Since ${timeSinceEntry.inWholeMinutes} minutes ago"
                     } else {
                         val formattedTime = sinceTime.format(LocalDateTime.Format {
                             amPmHour(Padding.NONE)
@@ -297,7 +297,7 @@ fun MapView(navController: NavHostController) {
                                 dayOfMonth()
                             })
                         }
-                        sinceString = "since $formattedTime $formattedDate"
+                        sinceString = "Since $formattedTime $formattedDate"
                     }
                     delay(1000)
                 }
@@ -315,7 +315,9 @@ fun MapView(navController: NavHostController) {
                                  },
                 headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) },
                 supportingContent = if(showSupportingContent) {
-                    {Text("At ${user.locationName} $sinceString\nUpdated $lastUpdatedTime")}
+                    {Text("At ${user.locationName}\n$sinceString\nUpdated $lastUpdatedTime")}
+                } else null, trailingContent = if(showSupportingContent){
+                    {Text("$speed m/s")}
                 } else null)
         }
     }

@@ -50,7 +50,8 @@ class BackgroundLocationService : Service() {
                         Coord(
                             location.latitude,
                             location.longitude
-                        )
+                        ),
+                        location.speed
                     )
                 }
                 delay(SHARE_INTERVAL)
