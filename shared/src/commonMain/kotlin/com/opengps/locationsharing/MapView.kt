@@ -276,7 +276,9 @@ fun MapView(navController: NavHostController) {
                     }
                     val sinceTime = users[user.id]!!.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
                     val timeSinceEntry = Clock.System.now() - users[user.id]!!.lastLocationChangeTime
-                    if(timeSinceEntry < 60.seconds) {
+                    if(users[user.id]!!.locationName == "Unnamed Location") {
+                        sinceString = ""
+                    } else if(timeSinceEntry < 60.seconds) {
                         sinceString = "Since just now"
                     } else if(timeSinceEntry < 15.minutes) {
                         sinceString = "Since ${timeSinceEntry.inWholeMinutes} minutes ago"
@@ -315,7 +317,7 @@ fun MapView(navController: NavHostController) {
                                  },
                 headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) },
                 supportingContent = if(showSupportingContent) {
-                    {Text("At ${user.locationName}\n$sinceString\nUpdated $lastUpdatedTime")}
+                    {Text("At ${user.locationName}\nUpdated $lastUpdatedTime\n$sinceString")}
                 } else null, trailingContent = if(showSupportingContent){
                     {Text("$speed m/s")}
                 } else null)
