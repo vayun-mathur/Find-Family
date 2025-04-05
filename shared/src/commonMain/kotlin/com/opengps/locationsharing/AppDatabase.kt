@@ -11,6 +11,8 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Entity
@@ -23,7 +25,8 @@ data class User(
     var receive: Boolean,
     var send: Boolean,
     var lastBatteryLevel: Float? = null,
-    var lastCoord: Coord? = null
+    var lastCoord: Coord? = null,
+    var lastLocationChangeTime: Instant = Clock.System.now()
 )
 
 class TC {
@@ -56,6 +59,16 @@ class TC {
     fun toULongList(value: String): MutableList<ULong> {
         if(value == "") return mutableListOf()
         return value.split(",").map { it.toULong() }.toMutableList()
+    }
+
+    @TypeConverter
+    fun fromInstant(value: Instant): Long {
+        return value.toEpochMilliseconds()
+    }
+
+    @TypeConverter
+    fun toInstant(value: Long): Instant {
+        return Instant.fromEpochMilliseconds(value)
     }
 }
 

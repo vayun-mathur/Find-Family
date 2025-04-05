@@ -108,7 +108,6 @@ class Networking {
                     setBody("{\"userid\": $userid}")
                 } } ?: return null
                 if(response.status != HttpStatusCode.OK) return null
-                println(response.bodyAsText())
                 val locationsEncrypted = response.body<List<String>>()
                 val locations = locationsEncrypted.map { decryptLocation(it) }
                 return locations

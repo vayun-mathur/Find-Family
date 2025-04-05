@@ -18,8 +18,6 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
             delay(100)
             dataStore().data.collect {
                 stateMap = it.asMap()
-                println("STATE UPDATE")
-                println(stateMap)
             }
         }
     }

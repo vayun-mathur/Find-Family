@@ -35,6 +35,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         locations.getOrPut(key) { mutableListOf() } += value
     }
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
+    println(recievedLocations)
     println(latestLocations)
     for((userid, locationHistory) in locations) {
         if(userid == Networking.userid) continue
@@ -48,7 +49,10 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 "BATTERY_LOW"
             )
         }
-        user.lastBatteryLevel = latest.battery
+        if(user.lastBatteryLevel != latest.battery) {
+            user.lastBatteryLevel = latest.battery
+            platform.database.usersDao().upsert(user)
+        }
 
         val waypointsSubset = waypoints.filter { !it.usersInactive.contains(userid) }
         // enter or exit waypoints

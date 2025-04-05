@@ -72,6 +72,15 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeFormatBuilder
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.toLocalDateTime
 import ovh.plrapps.mapcompose.api.DefaultCanvas
 import ovh.plrapps.mapcompose.api.addLayer
 import ovh.plrapps.mapcompose.api.addMarker
@@ -96,6 +105,9 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.random.nextULong
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 val client = HttpClient { install(HttpCache) }
 private val tileStreamProvider = TileStreamProvider { row, col, zoomLvl ->
@@ -253,6 +265,7 @@ fun MapView(navController: NavHostController) {
             }
         }) {
             var lastUpdatedTime by remember { mutableStateOf("") }
+            var sinceString by remember { mutableStateOf("") }
             LaunchedEffect(Unit) {
                 while(true) {
                     if(latestLocations.containsKey(user.id)) {
@@ -261,6 +274,31 @@ fun MapView(navController: NavHostController) {
                         } else {
                             "Never"
                         }
+                    }
+                    val sinceTime = users[user.id]!!.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
+                    val timeSinceEntry = Clock.System.now() - users[user.id]!!.lastLocationChangeTime
+                    if(timeSinceEntry < 60.seconds) {
+                        sinceString = "since just now"
+                    } else if(timeSinceEntry < 15.minutes) {
+                        sinceString = "since ${timeSinceEntry.inWholeMinutes} minutes ago"
+                    } else {
+                        val formattedTime = sinceTime.format(LocalDateTime.Format {
+                            amPmHour(Padding.NONE)
+                            chars(":")
+                            minute()
+                            chars(" ")
+                            amPmMarker("am", "pm")
+                        })
+                        val formattedDate = when(sinceTime.date.toEpochDays() - Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toEpochDays()) {
+                            0 -> "today"
+                            1 -> "yesterday"
+                            else -> sinceTime.date.format(LocalDate.Format {
+                                monthName(MonthNames.ENGLISH_ABBREVIATED)
+                                chars(" ")
+                                dayOfMonth()
+                            })
+                        }
+                        sinceString = "since $formattedTime $formattedDate"
                     }
                     delay(1000)
                 }
@@ -271,12 +309,14 @@ fun MapView(navController: NavHostController) {
                     Column(Modifier.width(65.dp)) {
                         UserPicture(user, 65.dp)
                         Spacer(Modifier.height(4.dp))
-                        BatteryBar(user.lastBatteryLevel?:100f)
+                        latestLocations[user.id]?.battery?.let {
+                            BatteryBar(it)
+                        }
                     }
                                  },
                 headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) },
                 supportingContent = if(showSupportingContent) {
-                    {Text("At ${user.locationName}\nUpdated $lastUpdatedTime")}
+                    {Text("At ${user.locationName} $sinceString\nUpdated $lastUpdatedTime")}
                 } else null)
         }
     }
@@ -314,13 +354,17 @@ fun MapView(navController: NavHostController) {
                 val waypointOverlap = waypoints.values.firstOrNull { waypoint ->
                     havershine(location.coord, waypoint.coord) < waypoint.range
                 }
-                users[id]!!.locationName = waypointOverlap?.name?: "Unnamed Location"
+                val newLocationName = waypointOverlap?.name?: "Unnamed Location"
+                if(users[id]!!.locationName != newLocationName) {
+                    users[id]!!.locationName = newLocationName
+                    users[id]!!.lastLocationChangeTime = Clock.System.now()
+                    usersDao.upsert(users[id]!!)
+                }
             }
         }
     }
     val requestPickContact1 = platform.requestPickContact { name, photo ->
         SuspendScope {
-            println(selectedID, name, photo, users[selectedID])
             val newUser = users[selectedID]!!.copy(name = name, photo = photo)
             users[selectedID!!] = newUser
             usersDao.upsert(newUser)
@@ -699,7 +743,7 @@ fun BatteryBar(batteryPercentage: Float) {
                     .width((width * (clampedPercentage / 100f))) // Fill the width based on percentage
                     .background(
                         color = when {
-                            clampedPercentage > 60 -> Color.Green // Full/High Battery
+                            clampedPercentage > 50 -> Color.Green // Full/High Battery
                             clampedPercentage > 20 -> Color.Yellow // Medium Battery
                             else -> Color.Red // Low Battery
                         },
