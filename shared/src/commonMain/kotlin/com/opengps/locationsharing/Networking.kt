@@ -1,7 +1,8 @@
 package com.opengps.locationsharing
 
 import dev.whyoleg.cryptography.CryptographyProvider
-import dev.whyoleg.cryptography.algorithms.AES
+import dev.whyoleg.cryptography.algorithms.RSA
+import dev.whyoleg.cryptography.algorithms.SHA512
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.SocketTimeoutException
@@ -31,19 +32,23 @@ class Networking {
                 json()
             }
         }
-        private val crypto = CryptographyProvider.Default.get(AES.CTR)
-        private var key: AES.CTR.Key? = null
+        private val crypto = CryptographyProvider.Default.get(RSA.OAEP)
+        private var publickey: RSA.OAEP.PublicKey? = null
+        private var privatekey: RSA.OAEP.PrivateKey? = null
         var userid: ULong? = null
             private set
 
         suspend fun init() {
             val platform = getPlatform()
-            platform.dataStoreUtils.setByteArray("privateKey", crypto.keyGenerator(AES.Key.Size.B256).generateKey().encodeToByteArray(AES.Key.Format.RAW), true)
+            val (privateKey, publicKey) = crypto.keyPairGenerator(digest = SHA512).generateKey().let { Pair(it.privateKey, it.publicKey) }
+            platform.dataStoreUtils.setByteArray("privateKey", privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM), true)
+            platform.dataStoreUtils.setByteArray("publicKey", publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM), true)
             platform.dataStoreUtils.setLong("userid", Random.nextLong(), true)
             platform.dataStoreUtils.setBoolean("useTor", false, true)
 
             delay(100)
-            key = crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, platform.dataStoreUtils.getByteArray("privateKey")!!)
+            publickey = crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, platform.dataStoreUtils.getByteArray("publicKey")!!)
+            privatekey = crypto.privateKeyDecoder(SHA512).decodeFromByteArray(RSA.PrivateKey.Format.PEM, platform.dataStoreUtils.getByteArray("privateKey")!!)
             userid = platform.dataStoreUtils.getLong("userid")!!.toULong()
         }
 
@@ -56,7 +61,7 @@ class Networking {
                     setBody(
                         Register(
                             userid!!,
-                            key!!.encodeToByteArray(AES.Key.Format.RAW).encodeBase64()
+                            publickey!!.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
                         )
                     )
                 }
@@ -69,7 +74,7 @@ class Networking {
             }
         }
 
-        private suspend fun getKey(userid: ULong): AES.CTR.Key? {
+        private suspend fun getKey(userid: ULong): RSA.OAEP.PublicKey? {
             try {
                 val response = getPlatform().torDNSChecker { client.post("https://${getUrl()}/getkey") {
                     contentType(ContentType.Application.Json)
@@ -78,7 +83,7 @@ class Networking {
                 if(response.status != HttpStatusCode.OK) {
                     return null
                 }
-                return crypto.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, response.bodyAsText().decodeBase64Bytes())
+                return crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, response.bodyAsText().decodeBase64Bytes())
             }  catch (e: ServerResponseException) {
                 return null
             } catch(e: Exception) {
@@ -115,15 +120,15 @@ class Networking {
             }
         }
 
-        private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: AES.CTR.Key): LocationSharingData {
-            val cipher = key.cipher()
+        private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: RSA.OAEP.PublicKey): LocationSharingData {
+            val cipher = key.encryptor()
             val str = Json.encodeToString(location)
             val encryptedData = cipher.encrypt(str.encodeToByteArray()).encodeBase64()
             return LocationSharingData(recipientUserID, encryptedData)
         }
 
         private suspend fun decryptLocation(encryptedLocation: String): LocationValue {
-            val cipher = key!!.cipher()
+            val cipher = privatekey!!.decryptor()
             val decryptedData = cipher.decrypt(encryptedLocation.decodeBase64Bytes()).decodeToString()
             return Json.decodeFromString(decryptedData)
         }
