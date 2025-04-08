@@ -10,6 +10,7 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.SQLiteDriver
 import androidx.sqlite.driver.NativeSQLiteDriver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import io.ktor.client.statement.HttpResponse
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import platform.Contacts.CNContact
@@ -110,6 +111,11 @@ class IOSPlatform: Platform() {
         notificationCenter.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { _, _ ->
             notificationCenter.addNotificationRequest(request, null)
         }
+    }
+
+    override suspend fun torDNSChecker(inner: suspend () -> HttpResponse): HttpResponse? {
+        //TODO: fix tor checker
+        return inner()
     }
 
     override val batteryLevel: Float
