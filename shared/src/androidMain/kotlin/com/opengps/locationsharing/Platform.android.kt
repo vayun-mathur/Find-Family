@@ -79,15 +79,6 @@ class AndroidPlatform(private val context: Context): Platform() {
         notificationManager.notify(Random.nextInt(), notification)
     }
 
-    override suspend fun torDNSChecker(inner: suspend ()->HttpResponse): HttpResponse? {
-        return try {
-            inner()
-        } catch(e: UnknownHostException) {
-            println(e.message)
-            null
-        }
-    }
-
     override val batteryLevel: Float
         get() {
             val batteryStatus: Intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))!!
@@ -95,6 +86,8 @@ class AndroidPlatform(private val context: Context): Platform() {
             val scale: Int = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             return level * 100f / scale
         }
+
+    override val name: String = "Android"
 
 }
 

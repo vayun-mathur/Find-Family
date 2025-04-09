@@ -113,13 +113,10 @@ class IOSPlatform: Platform() {
         }
     }
 
-    override suspend fun torDNSChecker(inner: suspend () -> HttpResponse): HttpResponse? {
-        //TODO: fix tor checker
-        return inner()
-    }
-
     override val batteryLevel: Float
         get() = UIDevice.currentDevice.batteryLevel * 100
+
+    override val name: String = "IOS"
 }
 
 @OptIn(ExperimentalForeignApi::class)

@@ -18,9 +18,9 @@ abstract class Platform {
     abstract fun runBackgroundService()
     abstract fun createNotification(s: String, channelId: String)
 
-    abstract suspend fun torDNSChecker(inner: suspend ()-> HttpResponse): HttpResponse?
-
     abstract val batteryLevel: Float
+
+    abstract val name: String
 }
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =

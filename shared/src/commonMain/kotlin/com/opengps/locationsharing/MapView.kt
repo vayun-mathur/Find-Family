@@ -168,7 +168,7 @@ fun SuspendScope(block: suspend () -> Unit): Job {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapView(navController: NavHostController) {
+fun MapView() {
     val platform = getPlatform()
     val usersDao = platform.database.usersDao()
     val users = remember { mutableStateMapOf<ULong, User>() }
@@ -500,9 +500,6 @@ fun MapView(navController: NavHostController) {
                         onClick = { addWaypointPopupEnable = true; expanded = false }
                     )
                 }
-            }
-            IconButton(onClick = { navController.navigate("settings") }) {
-                Icon(Icons.Default.Settings, null)
             }
         }
         if (selectedID != null) {

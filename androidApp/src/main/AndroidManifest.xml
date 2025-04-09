@@ -16,6 +16,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:networkSecurityConfig="@xml/network_security"
         android:theme="@style/AppTheme" android:label="@string/app_name">
 
         <service

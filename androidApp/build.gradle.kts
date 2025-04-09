@@ -54,4 +54,7 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.fragment.ktx)
+
+    implementation(libs.guardianproject.tor.android)
+    implementation(libs.jtorctl)
 }
