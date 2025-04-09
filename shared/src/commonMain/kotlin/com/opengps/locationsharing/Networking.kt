@@ -65,6 +65,12 @@ class Networking {
                     println("network is down")
                 }
                 network_is_down = true
+            } catch(e: SocketTimeoutException) {
+                if (!network_is_down) {
+                    //TODO: notify user
+                    println("network is down")
+                }
+                network_is_down = true
             }
             return null
         }
