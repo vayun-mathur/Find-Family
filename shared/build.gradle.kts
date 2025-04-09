@@ -37,10 +37,6 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            //location
-            implementation(libs.compass.geocoder)
-            implementation(libs.compass.geocoder.mobile)
-            implementation(libs.compass.permissions.mobile)
 
             implementation(libs.androidx.room.runtime)
             implementation(libs.kotlinx.datetime)

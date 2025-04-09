@@ -61,7 +61,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
-import dev.jordond.compass.geocoder.Geocoder
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.request.get
@@ -357,9 +356,7 @@ fun MapView(navController: NavHostController) {
                 val waypointOverlap = waypoints.values.firstOrNull { waypoint ->
                     havershine(location.coord, waypoint.coord) < waypoint.range
                 }
-                val newLocationName = waypointOverlap?.name?: (
-                        Geocoder().reverse(location.coord.lat, location.coord.lon).getFirstOrNull()?.name?:"Unnamed Location"
-                        )
+                val newLocationName = waypointOverlap?.name?: ("Unnamed Location")
                 if(users[id]!!.locationName != newLocationName) {
                     users[id]!!.locationName = newLocationName
                     users[id]!!.lastLocationChangeTime = Clock.System.now()
