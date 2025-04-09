@@ -8,11 +8,11 @@ android {
     namespace = "com.opengps.locationsharing.android"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.opengps.locationsharing.android"
+        applicationId = "cc.findfamily.app"
         minSdk = 34
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "v1.0"
     }
     buildFeatures {
         compose = true
