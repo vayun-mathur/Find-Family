@@ -57,4 +57,5 @@ dependencies {
 
     implementation(libs.guardianproject.tor.android)
     implementation(libs.jtorctl)
+
 }

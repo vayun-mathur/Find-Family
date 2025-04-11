@@ -26,7 +26,7 @@ androidx-room = "2.7.0-rc02"
 ksp = "2.1.0-1.0.29"
 compass = "1.2.2"
 sqliteBundled = "2.5.0-rc03"
-torAndroidVersion = "0.4.8.12"
+torAndroidVersion = "0.4.7.14"
 
 [libraries]
 androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastoreCoreAndroid" }
