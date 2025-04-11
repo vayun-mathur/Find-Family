@@ -5,10 +5,9 @@ import dev.whyoleg.cryptography.algorithms.RSA
 import dev.whyoleg.cryptography.algorithms.SHA512
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.ProxyConfig
+import io.ktor.client.engine.ProxyBuilder
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -23,7 +22,6 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
-import io.ktor.client.engine.ProxyBuilder
 
 class Networking {
     companion object {
@@ -35,13 +33,13 @@ class Networking {
                 json()
             }
             engine {
-                proxy = ProxyBuilder.socks("localhost", 9050)
+                proxy = ProxyBuilder.socks("localhost", 42997)
             }
         }
         private val crypto = CryptographyProvider.Default.get(RSA.OAEP)
         private var publickey: RSA.OAEP.PublicKey? = null
         private var privatekey: RSA.OAEP.PrivateKey? = null
-        private var network_is_down = false;
+        private var network_is_down = false
         var userid: ULong? = null
             private set
 

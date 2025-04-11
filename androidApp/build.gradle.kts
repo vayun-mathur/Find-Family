@@ -40,6 +40,14 @@ android {
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("x86", "armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = true
+        }
+    }
 }
 
 dependencies {
@@ -54,8 +62,5 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.fragment.ktx)
-
-    implementation(libs.guardianproject.tor.android)
-    implementation(libs.jtorctl)
 
 }

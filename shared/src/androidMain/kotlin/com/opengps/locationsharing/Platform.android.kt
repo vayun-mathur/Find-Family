@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.ConnectivityManager
 import android.os.BatteryManager
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,15 +20,20 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
-import io.ktor.client.statement.HttpResponse
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.net.NetworkInterface
-import java.net.UnknownHostException
+import io.matthewnelson.kmp.tor.resource.noexec.tor.ResourceLoaderTorNoExec
+import io.matthewnelson.kmp.tor.runtime.TorRuntime
+import io.matthewnelson.kmp.tor.runtime.service.TorServiceConfig
 import kotlin.random.Random
 
+private val ServiceConfig = TorServiceConfig.Builder {
+    // configure...
+}
 
 class AndroidPlatform(private val context: Context): Platform() {
+    override val runtimeEnvironment: TorRuntime.Environment by lazy {
+        ServiceConfig.newEnvironment(ResourceLoaderTorNoExec::getOrCreate)
+    }
+
     override val dataStore: DataStore<Preferences> = createDataStore(context)
 
     @SuppressLint("Range")
@@ -63,7 +67,7 @@ class AndroidPlatform(private val context: Context): Platform() {
         .setDriver(AndroidSQLiteDriver()).build()
 
     override fun runBackgroundService() {
-        if(PermissionChecker.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PermissionChecker.PERMISSION_GRANTED) {
+        if(PermissionChecker.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PermissionChecker.PERMISSION_GRANTED) {
             context.startForegroundService(Intent(context, BackgroundLocationService::class.java))
         }
     }

@@ -37,7 +37,9 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-
+            implementation(libs.runtime.service.ui)
+            implementation(libs.resource.noexec.tor)
+            implementation(libs.runtime)
             implementation(libs.androidx.room.runtime)
             implementation(libs.kotlinx.datetime)
             implementation(libs.navigation.compose)
@@ -47,7 +49,6 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
-            //put your multiplatform dependencies here
             implementation(compose.components.resources)
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)

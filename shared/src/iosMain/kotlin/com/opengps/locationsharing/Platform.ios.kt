@@ -4,20 +4,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.sqlite.SQLiteDriver
-import androidx.sqlite.driver.NativeSQLiteDriver
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import io.ktor.client.statement.HttpResponse
+import io.matthewnelson.kmp.file.absoluteFile
+import io.matthewnelson.kmp.file.resolve
+import io.matthewnelson.kmp.file.toFile
+import io.matthewnelson.kmp.tor.resource.noexec.tor.ResourceLoaderTorNoExec
+import io.matthewnelson.kmp.tor.runtime.TorRuntime
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.coroutines.delay
 import platform.Contacts.CNContact
 import platform.ContactsUI.CNContactPickerDelegateProtocol
 import platform.ContactsUI.CNContactPickerViewController
+import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSLibraryDirectory
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIApplication
@@ -26,7 +28,6 @@ import platform.UIKit.UINavigationController
 import platform.UIKit.UITabBarController
 import platform.UIKit.UIViewController
 import platform.UserNotifications.UNAuthorizationOptionAlert
-import platform.UserNotifications.UNAuthorizationStatusAuthorized
 import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotification
 import platform.UserNotifications.UNNotificationPresentationOptionBanner
@@ -36,9 +37,33 @@ import platform.UserNotifications.UNUserNotificationCenter
 import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
 import kotlin.random.Random
-import kotlin.uuid.Uuid
 
 class IOSPlatform: Platform() {
+
+    override val runtimeEnvironment: TorRuntime.Environment by lazy {
+        // ../data/Library
+        val library = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, true)
+            .firstOrNull()
+            ?.toString()
+            ?.ifBlank { null }
+            ?.toFile()
+            ?: "".toFile().absoluteFile.resolve("Library")
+
+        // ../data/Library/Caches
+        val caches = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true)
+            .firstOrNull()
+            ?.toString()
+            ?.ifBlank { null }
+            ?.toFile()
+            ?: library.resolve("Caches")
+
+        TorRuntime.Environment.Builder(
+            workDirectory = library.resolve("kmptor"),
+            cacheDirectory = caches.resolve("kmptor"),
+            loader = ResourceLoaderTorNoExec::getOrCreate,
+        )
+    }
+
     @OptIn(ExperimentalForeignApi::class)
     override val dataStore: DataStore<Preferences> = createDataStore(
     producePath = {

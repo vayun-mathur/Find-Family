@@ -9,6 +9,7 @@ import android.content.Intent
 import android.location.LocationManager
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
@@ -41,6 +42,7 @@ class BackgroundLocationService : Service() {
         serviceJob = SuspendScope {
             while(platformObject == null)
                 platformObject = AndroidPlatform(this@BackgroundLocationService)
+            runtime.startDaemonAsync()
             Networking.init()
             updateNotification("started")
             while(true) {
