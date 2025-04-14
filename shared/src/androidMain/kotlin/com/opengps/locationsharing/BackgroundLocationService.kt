@@ -8,10 +8,14 @@ import android.app.Service
 import android.content.Intent
 import android.location.LocationManager
 import android.os.IBinder
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class BackgroundLocationService : Service() {
 
@@ -42,7 +46,21 @@ class BackgroundLocationService : Service() {
         serviceJob = SuspendScope {
             while(platformObject == null)
                 platformObject = AndroidPlatform(this@BackgroundLocationService)
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(
+                    this@BackgroundLocationService,
+                    "Making connection",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
             runtime.startDaemonAsync()
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(
+                    this@BackgroundLocationService,
+                    "Connected to server!",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
             Networking.init()
             updateNotification("started")
             while(true) {
