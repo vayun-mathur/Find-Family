@@ -67,6 +67,7 @@ class AndroidPlatform(private val context: Context): Platform() {
         .setDriver(AndroidSQLiteDriver()).build()
 
     override fun runBackgroundService() {
+
         if(PermissionChecker.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PermissionChecker.PERMISSION_GRANTED) {
             context.startForegroundService(Intent(context, BackgroundLocationService::class.java))
         }
