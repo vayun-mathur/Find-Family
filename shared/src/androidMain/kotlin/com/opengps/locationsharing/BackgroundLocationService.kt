@@ -53,7 +53,8 @@ class BackgroundLocationService : Service() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            runtime.startDaemonAsync()
+            //TODO: eventually re-enable tor
+            //runtime.startDaemonAsync()
             CoroutineScope(Dispatchers.Main).launch {
                 Toast.makeText(
                     this@BackgroundLocationService,

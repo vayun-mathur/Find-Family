@@ -33,7 +33,8 @@ class Networking {
                 json()
             }
             engine {
-                proxy = ProxyBuilder.socks("localhost", 42997)
+                //TODO: re-enable tor eventually
+                //proxy = ProxyBuilder.socks("localhost", 42997)
             }
         }
         private val crypto = CryptographyProvider.Default.get(RSA.OAEP)
