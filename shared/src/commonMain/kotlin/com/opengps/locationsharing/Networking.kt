@@ -26,7 +26,7 @@ import kotlin.random.Random
 class Networking {
     companion object {
 
-        private fun getUrl() = if(getPlatform().name == "Android") "http://d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "https://api.findfamily.cc"
+        private fun getUrl() = "https://findfamily.cc" // if(getPlatform().name == "Android") "http://d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "api.findfamily.cc"
 
         private val client = HttpClient() {
             install(ContentNegotiation) {
@@ -82,7 +82,7 @@ class Networking {
             @Serializable
             data class Register(val userid: ULong, val key: String)
             checkNetworkDown {
-                client.post("${getUrl()}/register") {
+                client.post("${getUrl()}/api/register") {
                     contentType(ContentType.Application.Json)
                     setBody(
                         Register(
@@ -103,7 +103,7 @@ class Networking {
 
         private suspend fun getKey(userid: ULong): RSA.OAEP.PublicKey? {
             return checkNetworkDown {
-                val response = client.post("${getUrl()}/getkey") {
+                val response = client.post("${getUrl()}/api/getkey") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")
                 }
@@ -117,7 +117,7 @@ class Networking {
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
             return checkNetworkDown {
                 val key = getKey(user.id) ?: return@checkNetworkDown false
-                client.post("${getUrl()}/location/publish") {
+                client.post("${getUrl()}/api/location/publish") {
                     contentType(ContentType.Application.Json)
                     setBody(encryptLocation(location, user.id, key))
                 }
@@ -127,7 +127,7 @@ class Networking {
 
         suspend fun receiveLocations(): List<LocationValue>? {
             return checkNetworkDown {
-                val response = client.post("${getUrl()}/location/receive") {
+                val response = client.post("${getUrl()}/api/location/receive") {
                     contentType(ContentType.Application.Json)
                     setBody("{\"userid\": $userid}")
                 }
