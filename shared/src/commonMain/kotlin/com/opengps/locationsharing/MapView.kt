@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
@@ -60,7 +59,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
@@ -103,6 +101,7 @@ import ovh.plrapps.mapcompose.ui.MapUI
 import ovh.plrapps.mapcompose.ui.state.MapState
 import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlin.time.Duration.Companion.minutes
@@ -113,7 +112,7 @@ private val tileStreamProvider = TileStreamProvider { row, col, zoomLvl ->
     client.get("https://tile.openstreetmap.org/$zoomLvl/$col/$row.png").bodyAsChannel().asSource()
 }
 
-private const val maxLevel = 18
+private const val maxLevel = 19
 private val mapSize = 256 * 2.0.pow(maxLevel).toInt()
 val state = MapState(maxLevel + 1, mapSize, mapSize, workerCount = 16).apply {
     addLayer(tileStreamProvider)
@@ -274,7 +273,7 @@ fun MapView() {
             LaunchedEffect(Unit) {
                 while(true) {
                     if(latestLocations.containsKey(user.id)) {
-                        speed = latestLocations[user.id]!!.speed
+                        speed = latestLocations[user.id]!!.speed.times(10).roundToInt().div(10F)
                         lastUpdatedTime = timestring(latestLocations[user.id]!!.timestamp)
                     } else {
                         lastUpdatedTime = "Never"
