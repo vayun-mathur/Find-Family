@@ -45,6 +45,7 @@ class Networking {
             private set
 
         suspend fun init() {
+            println("init")
             val platform = getPlatform()
             val (privateKey, publicKey) = crypto.keyPairGenerator(digest = SHA512).generateKey().let { Pair(it.privateKey, it.publicKey) }
             platform.dataStoreUtils.setByteArray("privateKey", privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM), true)

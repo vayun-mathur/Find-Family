@@ -273,6 +273,10 @@ fun MapView() {
                     } else {
                         lastUpdatedTime = "Never"
                     }
+                    if(users[user.id] == null) {
+                        delay(1000)
+                        continue
+                    }
                     val sinceTime = users[user.id]!!.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
                     val timeSinceEntry = Clock.System.now() - users[user.id]!!.lastLocationChangeTime
                     if(users[user.id]!!.locationName == "Unnamed Location") {

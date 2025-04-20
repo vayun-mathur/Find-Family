@@ -10,6 +10,7 @@ private var last_time: Long = 0
 
 fun BackgroundService() {
     SuspendScope {
+        Networking.init()
         // TODO: re-enable tor eventually
         //runtime.startDaemonAsync()
     }
