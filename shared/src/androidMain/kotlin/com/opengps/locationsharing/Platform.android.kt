@@ -84,6 +84,12 @@ class AndroidPlatform(private val context: Context): Platform() {
         notificationManager.notify(Random.nextInt(), notification)
     }
 
+    override fun copyToClipboard(text: String) {
+        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clipData = android.content.ClipData.newPlainText("text", text)
+        clipboardManager.setPrimaryClip(clipData)
+    }
+
     override val batteryLevel: Float
         get() {
             val batteryStatus: Intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))!!

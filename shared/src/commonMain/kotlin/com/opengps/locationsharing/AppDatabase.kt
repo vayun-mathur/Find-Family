@@ -24,8 +24,8 @@ data class User(
     var locationName: String,
     var receive: Boolean,
     var send: Boolean,
-    var lastBatteryLevel: Float? = null,
-    var lastCoord: Coord? = null,
+    var lastBatteryLevel: Float?,
+    var lastCoord: Coord?,
     var lastLocationChangeTime: Instant = Clock.System.now()
 )
 
@@ -94,7 +94,7 @@ interface WaypointDao {
     suspend fun upsert(wp: Waypoint)
 
     @Query("DELETE FROM Waypoint WHERE id = :id")
-    suspend fun delete(id: Long)
+    suspend fun delete(id: ULong)
 
     @Query("DELETE FROM Waypoint")
     suspend fun deleteAll()

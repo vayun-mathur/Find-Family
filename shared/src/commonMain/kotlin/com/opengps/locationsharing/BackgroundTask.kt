@@ -21,7 +21,8 @@ const val CONFIRMATIONS_REQUIRED = 10u
 
 private suspend fun locationBackend(locationValue: LocationValue) {
     val platform = getPlatform()
-    val users = platform.database.usersDao().getAll()
+    val usersDao = platform.database.usersDao()
+    val users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
 
     Networking.ensureUserExists()
@@ -37,9 +38,13 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
     println(latestLocations)
     for((userid, locationHistory) in locations) {
-        if(userid == Networking.userid) continue
         val user = users.first{it.id == userid}
         val latest = locationHistory.last()
+        if(userid == Networking.userid) {
+            user.lastCoord = latest.coord
+            usersDao.upsert(user)
+            continue
+        }
 
         // battery level
         if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {
@@ -50,7 +55,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         }
         if(user.lastBatteryLevel != latest.battery) {
             user.lastBatteryLevel = latest.battery
-            platform.database.usersDao().upsert(user)
+            usersDao.upsert(user)
         }
 
         val waypointsSubset = waypoints.filter { !it.usersInactive.contains(userid) }
@@ -71,14 +76,14 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                     )
                     confirmCount[userid] = 0u
                     user.lastCoord = latest.coord
-                    platform.database.usersDao().upsert(user)
+                    usersDao.upsert(user)
                 } else {
                     confirmCount[userid] = confirmCount[userid]!! + 1u
                     println("WAYPOINT_ENTER: confirmations: " + confirmCount[userid])
                 }
             } else {
                 user.lastCoord = latest.coord
-                platform.database.usersDao().upsert(user)
+                usersDao.upsert(user)
             }
         } else {
             val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
@@ -95,14 +100,14 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                     )
                     confirmCount[userid] = 0u
                     user.lastCoord = latest.coord
-                    platform.database.usersDao().upsert(user)
+                    usersDao.upsert(user)
                 } else {
                     confirmCount[userid] = confirmCount[userid]!! + 1u
                     println("WAYPOINT_EXIT: confirmations: " + confirmCount[userid])
                 }
             } else {
                 user.lastCoord = latest.coord
-                platform.database.usersDao().upsert(user)
+                usersDao.upsert(user)
             }
         }
     }

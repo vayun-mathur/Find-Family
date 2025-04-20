@@ -25,6 +25,7 @@ import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIApplication
 import platform.UIKit.UIDevice
 import platform.UIKit.UINavigationController
+import platform.UIKit.UIPasteboard
 import platform.UIKit.UITabBarController
 import platform.UIKit.UIViewController
 import platform.UserNotifications.UNAuthorizationOptionAlert
@@ -136,6 +137,11 @@ class IOSPlatform: Platform() {
         notificationCenter.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { _, _ ->
             notificationCenter.addNotificationRequest(request, null)
         }
+    }
+
+    override fun copyToClipboard(text: String) {
+        val pasteboard = UIPasteboard.generalPasteboard()
+        pasteboard.string = text
     }
 
     override val batteryLevel: Float

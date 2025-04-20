@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -183,8 +184,8 @@ fun MapView() {
     val waypoints: SnapshotStateMap<ULong, Waypoint> = remember { mutableStateMapOf() }
 
     fun addUserMarker(user: User) {
-        val loc = latestLocations[user.id]?: return
-        val res = doProjection(loc.coord)
+        val loc = latestLocations[user.id]?.coord?: user.lastCoord ?: return
+        val res = doProjection(loc)
         state.addMarker(user.id.toString(), res.first, res.second, relativeOffset = Offset(-0.5f, -0.5f)) {
             UserPicture(user, 50.dp)
         }
@@ -210,7 +211,9 @@ fun MapView() {
                     null,
                     "Unnamed Location",
                     true,
-                    true
+                    true,
+                    null,
+                    null
                 )
                 usersDao.upsert(newUser)
                 users[newUser.id] = newUser
@@ -222,6 +225,9 @@ fun MapView() {
                 state.centerOnMarker(selectedID!!.toString())
             } else {
                 users.values.forEach(::addUserMarker)
+                println(Networking.userid.toString())
+                println(users[Networking.userid])
+                state.centerOnMarker(Networking.userid.toString())
             }
             waypoints.values.forEach(::addWaypointMarker)
         }
@@ -424,7 +430,7 @@ fun MapView() {
 
         Box(Modifier.clickable { requestPickContact2() }) {
             if (contactName.isNotEmpty())
-                UserCard(User(Random.nextULong(), contactName, contactPhoto, "", false, false), false)
+                UserCard(User(Random.nextULong(), contactName, contactPhoto, "", false, false, null, null), false)
             else
                 Card {
                     ListItem(
@@ -452,6 +458,11 @@ fun MapView() {
             label = { Text("Contact's User ID") })
 
         Text("Your contact will also need to enable location sharing within their app by entering ${Networking.userid!!.encodeBase26()}")
+        Button({
+            getPlatform().copyToClipboard(Networking.userid!!.encodeBase26())
+        }) {
+            Text("Copy Your User ID")
+        }
 
         var receive by remember { mutableStateOf(true) }
         var send by remember { mutableStateOf(true) }
@@ -473,7 +484,7 @@ fun MapView() {
             {
                 val trueID = recipientID.decodeBase26()
                 addPersonPopupEnabled = false
-                val newUser = User(trueID, contactName, contactPhoto, "", receive, send)
+                val newUser = User(trueID, contactName, contactPhoto, "", receive, send, null, null)
                 users[trueID] = newUser
                 SuspendScope {
                     usersDao.upsert(newUser)
@@ -670,7 +681,7 @@ fun MapView() {
 
                 OutlinedButton({
                     SuspendScope {
-                        platform.database.waypointDao().delete(selectedID!!.toLong())
+                        platform.database.waypointDao().delete(selectedID!!)
                         waypoints.remove(selectedID!!)
                         selectedID = null
                     }
