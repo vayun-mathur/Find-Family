@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -8,6 +9,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.room.Transaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
@@ -26,7 +28,8 @@ data class User(
     var send: Boolean,
     var lastBatteryLevel: Float?,
     var lastCoord: Coord?,
-    var lastLocationChangeTime: Instant = Clock.System.now()
+    var lastLocationChangeTime: Instant = Clock.System.now(),
+    var lastLocationValue: LocationValue? = null,
 )
 
 class TC {
@@ -70,6 +73,26 @@ class TC {
     fun toInstant(value: Long): Instant {
         return Instant.fromEpochMilliseconds(value)
     }
+
+    @TypeConverter
+    fun fromLocationValue(value: LocationValue?): String? {
+        if(value == null) return null
+        return "${value.userid},${value.coord.lat},${value.coord.lon},${value.speed},${value.acc},${value.timestamp},${value.battery}"
+    }
+
+    @TypeConverter
+    fun toLocationValue(value: String?): LocationValue? {
+        if (value == null) return null
+        val parts = value.split(",")
+        return LocationValue(
+            parts[0].toULong(),
+            Coord(parts[1].toDouble(), parts[2].toDouble()),
+            parts[3].toFloat(),
+            parts[4].toFloat(),
+            parts[5].toLong(),
+            parts[6].toFloat()
+        )
+    }
 }
 
 @Entity
@@ -111,6 +134,12 @@ interface UsersDao {
     @Upsert
     suspend fun upsert(user: User)
 
+    @Transaction
+    suspend fun update(id: ULong, transform: (User)->User) {
+        val user = getById(id) ?: return
+        upsert(transform(user))
+    }
+
     @Query("DELETE FROM User WHERE id = :id")
     suspend fun delete(id: ULong)
 
@@ -118,7 +147,10 @@ interface UsersDao {
     suspend fun deleteAll()
 }
 
-@Database(entities = [Waypoint::class, User::class], version = 1)
+@Database(
+    entities = [Waypoint::class, User::class],
+    version = 2
+)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

@@ -80,7 +80,7 @@ class IOSPlatform: Platform() {
     )
     override val database = Room.databaseBuilder<AppDatabase>(
         name = documentDirectory() + "/my_room.db",
-    ).setDriver(BundledSQLiteDriver()).build()
+    ).setDriver(BundledSQLiteDriver()).addMigrations(MIGRATION_1_2).build()
 
     private val contactPicker = CNContactPickerViewController()
 

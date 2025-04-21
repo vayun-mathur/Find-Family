@@ -276,7 +276,7 @@ fun MapView() {
                         speed = latestLocations[user.id]!!.speed.times(10).roundToInt().div(10F)
                         lastUpdatedTime = timestring(latestLocations[user.id]!!.timestamp)
                     } else {
-                        lastUpdatedTime = "Never"
+                        lastUpdatedTime = user.lastLocationValue?.timestamp?.let{ timestring(it)}?:"Never"
                     }
                     if(users[user.id] == null) {
                         delay(1000)
@@ -376,9 +376,9 @@ fun MapView() {
     }
     val requestPickContact1 = platform.requestPickContact { name, photo ->
         SuspendScope {
-            val newUser = users[selectedID]!!.copy(name = name, photo = photo)
-            users[selectedID!!] = newUser
-            usersDao.upsert(newUser)
+            usersDao.update(selectedID!!) {
+                it.copy(name = name, photo = photo)
+            }
             state.removeMarker(selectedID!!.toString())
             addUserMarker(users[selectedID!!]!!)
         }
@@ -555,10 +555,10 @@ fun MapView() {
                             Spacer(Modifier.weight(1f))
                             Checkbox(
                                 users[selectedID]!!.receive,
-                                {
-                                    val newUser = users[selectedID]!!.copy(receive = it)
-                                    users[selectedID!!] = newUser
-                                    SuspendScope{usersDao.upsert(newUser)}
+                                { recieve ->
+                                    SuspendScope{
+                                        usersDao.update(selectedID!!){ it.copy(receive = recieve) }
+                                    }
                                 })
                         }
                         Spacer(Modifier.height(4.dp))
@@ -567,10 +567,10 @@ fun MapView() {
                             Spacer(Modifier.weight(1f))
                             Checkbox(
                                 users[selectedID]!!.send,
-                                {
-                                    val newUser = users[selectedID]!!.copy(send = it)
-                                    users[selectedID!!] = newUser
-                                    SuspendScope{usersDao.upsert(newUser)}
+                                { send ->
+                                    SuspendScope{
+                                        usersDao.update(selectedID!!){ it.copy(send = send)}
+                                    }
                                 })
                         }
                     }

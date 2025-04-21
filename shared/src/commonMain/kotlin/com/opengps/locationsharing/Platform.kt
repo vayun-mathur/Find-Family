@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.room.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.execSQL
 import io.matthewnelson.kmp.tor.runtime.TorRuntime
 import okio.Path.Companion.toPath
 
@@ -23,6 +26,12 @@ abstract class Platform {
     abstract val batteryLevel: Float
 
     abstract val name: String
+}
+
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE User ADD COLUMN lastLocationValue TEXT")
+    }
 }
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =

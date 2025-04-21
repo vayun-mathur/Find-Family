@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,6 +25,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     val usersDao = platform.database.usersDao()
     val users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
+    println(users)
 
     Networking.ensureUserExists()
 
@@ -36,26 +38,27 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         locations.getOrPut(key) { mutableListOf() } += value
     }
     latestLocations = locations.mapValues { it.value.last() }.toMutableMap()
+    for (user in users) {
+        val latestLocation = latestLocations[user.id]
+        if(latestLocation != null) {
+            usersDao.update(user.id) { it.copy(lastLocationValue = latestLocation) }
+        }
+    }
     println(latestLocations)
     for((userid, locationHistory) in locations) {
         val user = users.first{it.id == userid}
         val latest = locationHistory.last()
-        if(userid == Networking.userid) {
-            user.lastCoord = latest.coord
-            usersDao.upsert(user)
-            continue
-        }
 
         // battery level
         if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {
-            platform.createNotification(
-                "${user.name} is running low on battery",
-                "BATTERY_LOW"
-            )
+            if(userid != Networking.userid)
+                platform.createNotification(
+                    "${user.name} is running low on battery",
+                    "BATTERY_LOW"
+                )
         }
         if(user.lastBatteryLevel != latest.battery) {
-            user.lastBatteryLevel = latest.battery
-            usersDao.upsert(user)
+            usersDao.update(user.id) { it.copy(lastBatteryLevel = latest.battery) }
         }
 
         val waypointsSubset = waypoints.filter { !it.usersInactive.contains(userid) }
@@ -70,20 +73,19 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                     confirmCount[userid] = 0u
                 }
                 if(confirmCount.getOrPut(userid){0u} == CONFIRMATIONS_REQUIRED) {
-                    platform.createNotification(
-                        "${user.name} entered ${wpIn.name}",
-                        "WAYPOINT_ENTER_EXIT"
-                    )
+                    if(userid != Networking.userid)
+                        platform.createNotification(
+                            "${user.name} entered ${wpIn.name}",
+                            "WAYPOINT_ENTER_EXIT"
+                        )
                     confirmCount[userid] = 0u
-                    user.lastCoord = latest.coord
-                    usersDao.upsert(user)
+                    usersDao.update(user.id) { it.copy(lastCoord = latest.coord) }
                 } else {
                     confirmCount[userid] = confirmCount[userid]!! + 1u
                     println("WAYPOINT_ENTER: confirmations: " + confirmCount[userid])
                 }
             } else {
-                user.lastCoord = latest.coord
-                usersDao.upsert(user)
+                usersDao.update(user.id) { it.copy(lastCoord = latest.coord) }
             }
         } else {
             val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
@@ -94,20 +96,19 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                     confirmCount[userid] = 0u
                 }
                 if(confirmCount.getOrPut(userid){0u} == CONFIRMATIONS_REQUIRED) {
-                    platform.createNotification(
-                        "${user.name} left ${wasInEarlier.name}",
-                        "WAYPOINT_ENTER_EXIT"
-                    )
+                    if(userid != Networking.userid)
+                        platform.createNotification(
+                            "${user.name} left ${wasInEarlier.name}",
+                            "WAYPOINT_ENTER_EXIT"
+                        )
                     confirmCount[userid] = 0u
-                    user.lastCoord = latest.coord
-                    usersDao.upsert(user)
+                    usersDao.update(user.id) { it.copy(lastCoord = latest.coord) }
                 } else {
                     confirmCount[userid] = confirmCount[userid]!! + 1u
                     println("WAYPOINT_EXIT: confirmations: " + confirmCount[userid])
                 }
             } else {
-                user.lastCoord = latest.coord
-                usersDao.upsert(user)
+                usersDao.update(user.id) { it.copy(lastCoord = latest.coord) }
             }
         }
     }
