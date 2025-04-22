@@ -7,8 +7,12 @@ Find Family is a simple, end-to-end encrypted location sharing app for family an
 - No emails, phone numbers, or any other personal information required
 - Temporarily turn on or off location sharing with specific people
 - Saved places, with notifications when people enter or leave them
-- See battery status
-- Connect through Tor hidden service
+- See battery status / low battery notifications
 - Fully open source client
 - share current speed
 - show how long person has been at place (saved or not)
+
+### Todo:
+- Temporary location sharing via link (openable by web or by app)
+- Show location history
+- Connect through Tor hidden service
