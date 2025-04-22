@@ -83,9 +83,19 @@ struct iOSApp: App {
     }
 }
 
+struct ComposeViewController: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        startLocationUpdates()
+        return Platform_iosKt.MainViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+    }
+}
+
 struct ContentView: View {
     var body: some View {
-        Text("Location Tracking App") // Replace with your actual content
+        ComposeViewController()
     }
 }
 
