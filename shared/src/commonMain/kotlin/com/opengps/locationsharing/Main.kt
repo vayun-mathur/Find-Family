@@ -9,5 +9,5 @@ fun Main() {
     LaunchedEffect(Unit) {
         getPlatform().runBackgroundService()
     }
-    UI()
+    MapView()
 }

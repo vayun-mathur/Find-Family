@@ -22,17 +22,6 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
         }
     }
 
-    fun getString(name: String): String? {
-        return stateMap[stringPreferencesKey(name)] as String?
-    }
-
-    suspend fun setString(name: String, value: String, onlyIfAbsent: Boolean = false) {
-        dataStore().edit {
-            if(onlyIfAbsent && it.contains(stringPreferencesKey(name))) return@edit
-            it[stringPreferencesKey(name)] = value
-        }
-    }
-
     fun getByteArray(name: String): ByteArray? {
         return stateMap[stringPreferencesKey(name)] as ByteArray?
     }
@@ -41,17 +30,6 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
         dataStore().edit {
             if(onlyIfAbsent && it.contains(byteArrayPreferencesKey(name))) return@edit
             it[byteArrayPreferencesKey(name)] = value
-        }
-    }
-
-    fun getBoolean(name: String): Boolean? {
-        return stateMap[booleanPreferencesKey(name)] as Boolean?
-    }
-
-    suspend fun setBoolean(name: String, value: Boolean, onlyIfAbsent: Boolean = false) {
-        dataStore().edit {
-            if(onlyIfAbsent && it.contains(booleanPreferencesKey(name))) return@edit
-            it[booleanPreferencesKey(name)] = value
         }
     }
 
