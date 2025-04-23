@@ -73,6 +73,8 @@ class Networking {
                     println("network is down")
                 }
                 network_is_down = true
+            } catch(e: Throwable) {
+                println(e.printStackTrace())
             }
             return null
         }
