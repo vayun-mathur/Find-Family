@@ -25,7 +25,7 @@ import kotlin.random.Random
 class Networking {
     companion object {
 
-        private fun getUrl() = "https://findfamily.cc" // if(getPlatform().name == "Android") "http://d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "api.findfamily.cc"
+        private fun getUrl() = "https://findfamily.cc" // if(platform.name == "Android") "http://d5u5c37mmg337kgce5jpjkuuqnq7e5xc44w2vsc4wcjrrqlyo3jjvbqd.onion" else "api.findfamily.cc"
 
         private val client = HttpClient() {
             install(ContentNegotiation) {
@@ -44,7 +44,7 @@ class Networking {
             private set
 
         suspend fun init() {
-            val platform = getPlatform()
+            val platform = platform
             val (privateKey, publicKey) = crypto.keyPairGenerator(digest = SHA512).generateKey().let { Pair(it.privateKey, it.publicKey) }
             platform.dataStoreUtils.setByteArray("privateKey", privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM), true)
             platform.dataStoreUtils.setByteArray("publicKey", publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM), true)
@@ -119,7 +119,7 @@ class Networking {
                     crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, user.encryptionKey!!.decodeBase64Bytes())
                 } else {
                     getKey(user.id)?.also {
-                        getPlatform().database.usersDao().upsert(user.copy(
+                        platform.database.usersDao().upsert(user.copy(
                             encryptionKey = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
                         ))
                     }

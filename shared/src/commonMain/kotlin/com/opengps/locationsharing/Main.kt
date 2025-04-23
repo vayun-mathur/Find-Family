@@ -7,7 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 @Composable
 fun Main() {
     LaunchedEffect(Unit) {
-        getPlatform().runBackgroundService()
+        platform.runBackgroundService()
     }
     MapView()
 }

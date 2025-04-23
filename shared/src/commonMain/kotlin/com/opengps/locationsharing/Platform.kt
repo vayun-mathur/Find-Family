@@ -54,4 +54,7 @@ fun createDataStore(producePath: () -> String): DataStore<Preferences> =
 
 const val dataStoreFileName = "dice.preferences_pb"
 
-expect fun getPlatform(): Platform
+expect var platformInternal: Platform?
+
+val platform: Platform
+    get() = platformInternal!!

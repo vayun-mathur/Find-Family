@@ -184,11 +184,7 @@ private fun findTopMostViewController(rootViewController: UIViewController?): UI
     return null
 }
 
-actual fun getPlatform(): Platform {
-    return platformObject_IOS
-}
-
-val platformObject_IOS = IOSPlatform()
+actual var platformInternal: Platform? = IOSPlatform()
 
 fun MainViewController(): UIViewController =
     ComposeUIViewController {

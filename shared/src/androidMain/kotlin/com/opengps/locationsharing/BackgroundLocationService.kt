@@ -10,7 +10,6 @@ import android.location.LocationManager
 import android.os.IBinder
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,8 +43,8 @@ class BackgroundLocationService : Service() {
         ) {}
 
         serviceJob = SuspendScope {
-            while(platformObject == null)
-                platformObject = AndroidPlatform(this@BackgroundLocationService)
+            while(platformInternal == null)
+                platformInternal = AndroidPlatform(this@BackgroundLocationService)
             CoroutineScope(Dispatchers.Main).launch {
                 Toast.makeText(
                     this@BackgroundLocationService,

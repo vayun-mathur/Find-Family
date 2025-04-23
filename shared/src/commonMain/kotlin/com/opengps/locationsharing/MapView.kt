@@ -188,7 +188,7 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
                     else {
                         Button({
                             SuspendScope {
-                                getPlatform().copyToClipboard("https://findfamily.cc/view/${user.id}/${user.locationName}")
+                                platform.copyToClipboard("https://findfamily.cc/view/${user.id}/${user.locationName}")
                             }
                         }) {
                             Text("Copy link")
@@ -244,7 +244,7 @@ var selectedObject by mutableStateOf<ObjectParent?>(null)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapView() {
-    val usersDao = getPlatform().database.usersDao()
+    val usersDao = platform.database.usersDao()
 
     var objects by remember {mutableStateOf(mapOf<ULong, ObjectParent>())}
     val waypoints by remember { derivedStateOf { objects.values.filterIsInstance<Waypoint>() } }
@@ -258,7 +258,7 @@ fun MapView() {
 
     LaunchedEffect(Unit) {
         SuspendScope {
-            objects = (getPlatform().database.waypointDao().getAll() + usersDao.getAll()).associateBy { it.id }
+            objects = (platform.database.waypointDao().getAll() + usersDao.getAll()).associateBy { it.id }
             while(Networking.userid == null) { delay(500) }
             if(users.isEmpty()) {
                 val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, true, null, null)
@@ -278,7 +278,7 @@ fun MapView() {
             waypoints.forEach(::addWaypointMarker)
 
             while(true) {
-                objects = (getPlatform().database.waypointDao().getAll() + usersDao.getAll()).associateBy { it.id }
+                objects = (platform.database.waypointDao().getAll() + usersDao.getAll()).associateBy { it.id }
                 selectedObject = objects[selectedObject?.id]
                 delay(1000)
             }
@@ -381,9 +381,9 @@ fun BasicDialog(dismiss: () -> Unit = {}, content: @Composable DialogScope.() ->
 
 @Composable
 fun UserSheetContent(user: User) {
-    val usersDao = getPlatform().database.usersDao()
+    val usersDao = platform.database.usersDao()
 
-    val requestPickContact1 = getPlatform().requestPickContact { name, photo ->
+    val requestPickContact1 = platform.requestPickContact { name, photo ->
         SuspendScope {
             usersDao.upsert(user.copy(name = name, photo = photo))
             addOrUpdateUserMarker(user)
@@ -488,7 +488,7 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
                         currentWaypointPosition.second
                     )
                     SuspendScope {
-                        getPlatform().database.waypointDao().upsert(waypoint.copy(coord = coord, name = waypointNewName(), range = waypointNewRadius().toDouble()))
+                        platform.database.waypointDao().upsert(waypoint.copy(coord = coord, name = waypointNewName(), range = waypointNewRadius().toDouble()))
                     }
                 }
                 isEditing = !isEditing
@@ -518,7 +518,7 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
                                     } else {
                                         waypoint.usersInactive -= user.id
                                     }
-                                    getPlatform().database.waypointDao().upsert(waypoint)
+                                    platform.database.waypointDao().upsert(waypoint)
                                 }
                             })
                         }
@@ -529,7 +529,7 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
 
         OutlinedButton({
             SuspendScope {
-                getPlatform().database.waypointDao().delete(waypoint)
+                platform.database.waypointDao().delete(waypoint)
                 selectedObject = null
             }
         }) {
@@ -562,7 +562,7 @@ fun DialogScope.AddPersonPopup() {
     var send by remember { mutableStateOf(true) }
     var contactName by remember { mutableStateOf("") }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
-    val requestPickContact2 = getPlatform().requestPickContact { name, photo ->
+    val requestPickContact2 = platform.requestPickContact { name, photo ->
         contactName = name
         contactPhoto = photo
     }
@@ -604,7 +604,7 @@ fun DialogScope.AddPersonPopup() {
 
     Text("Your contact will also need to enable location sharing within their app by entering ${Networking.userid!!.encodeBase26()}")
     OutlinedButton({
-        getPlatform().copyToClipboard(Networking.userid!!.encodeBase26())
+        platform.copyToClipboard(Networking.userid!!.encodeBase26())
     }) {
         Text("Copy Your User ID")
     }
@@ -635,7 +635,7 @@ fun DialogScope.AddPersonPopup() {
                 null,
                 null,
             )
-            getPlatform().database.usersDao().upsert(newUser)
+            platform.database.usersDao().upsert(newUser)
             addOrUpdateUserMarker(newUser)
             close()
         }
@@ -691,7 +691,7 @@ fun DialogScope.AddPersonPopupTemporary() {
                     },
                 encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
             )
-            getPlatform().database.usersDao().upsert(newUser)
+            platform.database.usersDao().upsert(newUser)
             addOrUpdateUserMarker(newUser)
             close()
         } }, Modifier,contactName().isNotEmpty() && expiryTime.isNotEmpty()) {
@@ -714,7 +714,7 @@ fun DialogScope.AddWaypointPopup(coord: Coord) {
     OutlinedButton(
         {
             SuspendScope {
-                getPlatform().database.waypointDao().upsert(Waypoint(Random.nextULong(), waypointName(), waypointRadius().toDouble(), coord, mutableListOf()))
+                platform.database.waypointDao().upsert(Waypoint(Random.nextULong(), waypointName(), waypointRadius().toDouble(), coord, mutableListOf()))
             }
             close()
         }, Modifier, waypointName().isNotEmpty() && waypointRadius().isPositiveNumber()) {

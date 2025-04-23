@@ -11,8 +11,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import com.opengps.locationsharing.Main
-import com.opengps.locationsharing.getPlatform
-import com.opengps.locationsharing.platformObject
+import com.opengps.locationsharing.platform
+import com.opengps.locationsharing.platformInternal
 
 
 class MainActivity : ComponentActivity() {
@@ -28,14 +28,14 @@ class MainActivity : ComponentActivity() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(serviceChannel)
 
-        if(platformObject == null)
-            platformObject = com.opengps.locationsharing.AndroidPlatform(this)
+        if(platformInternal == null)
+            platformInternal = com.opengps.locationsharing.AndroidPlatform(this)
 
         setContent {
 
             val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
                 if(it) {
-                    getPlatform().runBackgroundService()
+                    platform.runBackgroundService()
                 }
             }
             LaunchedEffect(Unit) {

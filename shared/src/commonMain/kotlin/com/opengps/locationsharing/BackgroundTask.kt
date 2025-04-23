@@ -21,7 +21,6 @@ private const val CONFIRMATIONS_REQUIRED = 10u
 private var counter = 100
 
 private suspend fun locationBackend(locationValue: LocationValue) {
-    val platform = getPlatform()
     val usersDao = platform.database.usersDao()
     var users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
@@ -121,6 +120,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 // will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord, speed: Float) {
     if(Networking.userid == null) return
-    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), getPlatform().batteryLevel)
+    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel)
     locationBackend(locationValue)
 }

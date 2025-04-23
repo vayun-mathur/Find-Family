@@ -30,6 +30,7 @@ private val ServiceConfig = TorServiceConfig.Builder {
 }
 
 class AndroidPlatform(private val context: Context): Platform() {
+
     override val runtimeEnvironment: TorRuntime.Environment by lazy {
         ServiceConfig.newEnvironment(ResourceLoaderTorNoExec::getOrCreate)
     }
@@ -99,7 +100,6 @@ class AndroidPlatform(private val context: Context): Platform() {
         }
 
     override val name: String = "Android"
-
 }
 
 fun createDataStore(context: Context): DataStore<Preferences> =
@@ -107,9 +107,5 @@ fun createDataStore(context: Context): DataStore<Preferences> =
         producePath = { context.filesDir.resolve(dataStoreFileName).absolutePath }
     )
 
-actual fun getPlatform(): Platform {
-    return platformObject!!
-}
-
 @SuppressLint("StaticFieldLeak")
-var platformObject: AndroidPlatform? = null
+actual var platformInternal: Platform? = null
