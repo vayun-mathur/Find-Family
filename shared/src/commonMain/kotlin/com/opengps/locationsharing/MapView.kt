@@ -382,12 +382,12 @@ fun MapView() {
             (selectedObject as? User)?.let { user ->
                 val locations = locations[user.id] ?: return@let
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-                    Card(Modifier) {
-                        var percentage by remember { mutableStateOf(1f) }
+                    Card(Modifier.fillMaxWidth(0.5f)) {
+                        var percentage by remember { mutableStateOf(1.0) }
                         Slider(
-                            percentage,
-                            { percentage = it },
-                            Modifier.fillMaxWidth(0.5f).padding(16.dp)
+                            percentage.toFloat(),
+                            { percentage = it.toDouble() },
+                            Modifier.padding(16.dp)
                         )
                         // interpolate along locations as a percentage based on the timestamp
                         val latest = locations.maxOf { it.timestamp }
@@ -395,7 +395,7 @@ fun MapView() {
                         val points = locations.map {
                             it.timestamp to it.coord
                         }
-                        val simulatedTimestamp = percentage * (latest - oldest) + oldest
+                        val simulatedTimestamp = (percentage * (latest - oldest)).toLong() + oldest
                         val simulatedLocationFirst = points.find { it.first > simulatedTimestamp }
                         val simulatedLocationSecond = points.findLast { it.first < simulatedTimestamp }
                         val simulatedLocation = if (simulatedLocationFirst != null && simulatedLocationSecond != null) {
@@ -414,6 +414,8 @@ fun MapView() {
                         if(simulatedLocation != null) {
                             val (x, y) = doProjection(simulatedLocation)
                             state.moveMarker(user.id.toString(), x, y)
+                            val tstr = timestring(simulatedTimestamp)
+                            ListItem(TextP("Showing: ${if(tstr == "just now")"Present" else "Past"}"), supportingContent = TextP(tstr))
                         }
                     }
                 }
