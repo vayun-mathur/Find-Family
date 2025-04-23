@@ -30,6 +30,7 @@ data class User(
     var lastCoord: Coord?,
     var lastLocationChangeTime: Instant = Clock.System.now(),
     var lastLocationValue: LocationValue? = null,
+    var encryptionKey: String? = null,
 )
 
 class TC {
@@ -149,7 +150,7 @@ interface UsersDao {
 
 @Database(
     entities = [Waypoint::class, User::class],
-    version = 2
+    version = 3
 )
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)

@@ -33,6 +33,13 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         connection.execSQL("ALTER TABLE User ADD COLUMN lastLocationValue TEXT")
     }
 }
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE User ADD COLUMN encryptionKey TEXT")
+    }
+}
+
+val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =
     PreferenceDataStoreFactory.createWithPath(

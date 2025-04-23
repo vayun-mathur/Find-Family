@@ -80,7 +80,7 @@ class IOSPlatform: Platform() {
     )
     override val database = Room.databaseBuilder<AppDatabase>(
         name = documentDirectory() + "/my_room.db",
-    ).setDriver(BundledSQLiteDriver()).addMigrations(MIGRATION_1_2).build()
+    ).setDriver(BundledSQLiteDriver()).addMigrations(*migrations).build()
 
     private val contactPicker = CNContactPickerViewController()
 
@@ -101,7 +101,6 @@ class IOSPlatform: Platform() {
                     val name = "${didSelectContact.givenName} ${didSelectContact.familyName}".trim()
 
                     //TODO: add image
-                    println(name)
                     callback(name, null)
                     contactPicker.delegate = null
                     picker.dismissViewControllerAnimated(true, null)

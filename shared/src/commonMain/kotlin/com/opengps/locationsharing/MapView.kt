@@ -224,8 +224,6 @@ fun MapView() {
                 state.centerOnMarker(selectedID!!.toString())
             } else {
                 users.values.forEach(::addUserMarker)
-                println(Networking.userid.toString())
-                println(users[Networking.userid])
                 state.centerOnMarker(Networking.userid.toString())
             }
             waypoints.values.forEach(::addWaypointMarker)

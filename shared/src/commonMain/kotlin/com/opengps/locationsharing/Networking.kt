@@ -45,7 +45,6 @@ class Networking {
             private set
 
         suspend fun init() {
-            println("init")
             val platform = getPlatform()
             val (privateKey, publicKey) = crypto.keyPairGenerator(digest = SHA512).generateKey().let { Pair(it.privateKey, it.publicKey) }
             platform.dataStoreUtils.setByteArray("privateKey", privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM), true)
@@ -117,7 +116,15 @@ class Networking {
 
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
             return checkNetworkDown {
-                val key = getKey(user.id) ?: return@checkNetworkDown false
+                val key = if(user.encryptionKey != null) {
+                    crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, user.encryptionKey!!.decodeBase64Bytes())
+                } else {
+                    getKey(user.id)?.also {
+                        getPlatform().database.usersDao().upsert(user.copy(
+                            encryptionKey = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
+                        ))
+                    }
+                } ?: return@checkNetworkDown false
                 client.post("${getUrl()}/api/location/publish") {
                     contentType(ContentType.Application.Json)
                     setBody(encryptLocation(location, user.id, key))

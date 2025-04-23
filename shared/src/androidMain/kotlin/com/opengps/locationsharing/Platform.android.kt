@@ -64,7 +64,7 @@ class AndroidPlatform(private val context: Context): Platform() {
     }
 
     override val database = Room.databaseBuilder(context, AppDatabase::class.java, "database.db")
-        .setDriver(AndroidSQLiteDriver()).addMigrations(MIGRATION_1_2).build()
+        .setDriver(AndroidSQLiteDriver()).addMigrations(*migrations).build()
 
     override fun runBackgroundService() {
 

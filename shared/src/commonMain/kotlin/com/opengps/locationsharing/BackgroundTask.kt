@@ -20,14 +20,17 @@ val confirmType by mutableStateOf(mutableMapOf<ULong, String>())
 const val SHARE_INTERVAL = 3000L
 const val CONFIRMATIONS_REQUIRED = 10u
 
+var counter = 0;
+
 private suspend fun locationBackend(locationValue: LocationValue) {
     val platform = getPlatform()
     val usersDao = platform.database.usersDao()
     val users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
-    println(users)
 
-    Networking.ensureUserExists()
+    if(counter++ == 100) {
+        Networking.ensureUserExists()
+    }
 
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     location = locationValue

@@ -26,14 +26,6 @@ fun timestring(timestamp: Long): String {
 
 fun String.isPositiveNumber(): Boolean = this.isNotEmpty() && this.toDoubleOrNull() != null && this.toDouble() > 0
 
-fun println(vararg args: Any?) {
-    for (arg in args) {
-        print(arg)
-        print(" ")
-    }
-    kotlin.io.println()
-}
-
 fun String.decodeBase26(): ULong {
     var value = 0uL
     for(i in this.indices) {
