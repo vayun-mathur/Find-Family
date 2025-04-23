@@ -37,6 +37,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -337,31 +338,84 @@ fun MapView() {
         }
         TopAppBar(TextP(selectedObject?.name ?: "Location Sharing"), Modifier, navIcon, actions)
     }) {
-        MapUI(Modifier.fillMaxSize(), state = state) {
-            waypoints.forEach { waypoint ->
-                val radiusMeters = if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
-                val (origX, origY) =
-                    if (waypoint.id == selectedObject?.id) currentWaypointPosition else doProjection(waypoint.coord)
+        Box {
+            MapUI(Modifier.fillMaxSize(), state = state) {
+                waypoints.forEach { waypoint ->
+                    val radiusMeters =
+                        if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
+                    val (origX, origY) =
+                        if (waypoint.id == selectedObject?.id) currentWaypointPosition else doProjection(
+                            waypoint.coord
+                        )
 
-                val radius = radiusMeters / 12_742_000/3 / cos(radians(waypoint.coord.lat))
-                Circle(
-                    Offset(
-                        state.fullSize.width * origX.toFloat(),
-                        state.fullSize.height * origY.toFloat()
-                    ),
-                    Color(0x80Add8e6),
-                    Color(0xffAdd8e6),
-                    state.fullSize.height * radius.toFloat()
-                )
+                    val radius = radiusMeters / 12_742_000 / 3 / cos(radians(waypoint.coord.lat))
+                    Circle(
+                        Offset(
+                            state.fullSize.width * origX.toFloat(),
+                            state.fullSize.height * origY.toFloat()
+                        ),
+                        Color(0x80Add8e6),
+                        Color(0xffAdd8e6),
+                        state.fullSize.height * radius.toFloat()
+                    )
+                }
+                (selectedObject as? User)?.let { user ->
+                    val locations = locations[user.id] ?: return@let
+                    locations.windowed(2).forEach {
+                        val (x1, y1) = doProjection(it[0].coord)
+                        val (x2, y2) = doProjection(it[1].coord)
+                        Line(
+                            Offset(
+                                state.fullSize.width * x1.toFloat(),
+                                state.fullSize.height * y1.toFloat()
+                            ),
+                            Offset(
+                                state.fullSize.width * x2.toFloat(),
+                                state.fullSize.height * y2.toFloat()
+                            ),
+                            Color.Red
+                        )
+                    }
+                }
             }
+
             (selectedObject as? User)?.let { user ->
                 val locations = locations[user.id] ?: return@let
-                locations.windowed(2).forEach {
-                    val (x1, y1) = doProjection(it[0].coord)
-                    val (x2, y2) = doProjection(it[1].coord)
-                    Line(Offset(state.fullSize.width * x1.toFloat(), state.fullSize.height * y1.toFloat()),
-                        Offset(state.fullSize.width * x2.toFloat(), state.fullSize.height * y2.toFloat()),
-                        Color.Red)
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+                    Card(Modifier) {
+                        var percentage by remember { mutableStateOf(1f) }
+                        Slider(
+                            percentage,
+                            { percentage = it },
+                            Modifier.fillMaxWidth(0.5f).padding(16.dp)
+                        )
+                        // interpolate along locations as a percentage based on the timestamp
+                        val latest = locations.maxOf { it.timestamp }
+                        val oldest = locations.minOf { it.timestamp }
+                        val points = locations.map {
+                            it.timestamp to it.coord
+                        }
+                        val simulatedTimestamp = percentage * (latest - oldest) + oldest
+                        val simulatedLocationFirst = points.find { it.first > simulatedTimestamp }
+                        val simulatedLocationSecond = points.findLast { it.first < simulatedTimestamp }
+                        val simulatedLocation = if (simulatedLocationFirst != null && simulatedLocationSecond != null) {
+                            val ratio = (simulatedTimestamp - simulatedLocationFirst.first) / (simulatedLocationSecond.first - simulatedLocationFirst.first)
+                            Coord(
+                                simulatedLocationFirst.second.lat * (1 - ratio) + simulatedLocationSecond.second.lat * ratio,
+                                simulatedLocationFirst.second.lon * (1 - ratio) + simulatedLocationSecond.second.lon * ratio
+                            )
+                        } else if(simulatedLocationFirst != null) {
+                            simulatedLocationFirst.second
+                        } else if(simulatedLocationSecond != null) {
+                            simulatedLocationSecond.second
+                        } else {
+                            null
+                        }
+                        if(simulatedLocation != null) {
+                            val (x, y) = doProjection(simulatedLocation)
+                            state.moveMarker(user.id.toString(), x, y)
+                        }
+                    }
                 }
             }
         }
