@@ -23,6 +23,8 @@ abstract class Platform {
     abstract fun createNotification(s: String, channelId: String)
     abstract fun copyToClipboard(text: String)
 
+    abstract fun getBluetoothDevices(): List<BluetoothDevice>
+
     abstract val batteryLevel: Float
 
     abstract val name: String

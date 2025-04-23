@@ -49,7 +49,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         platform.database.locationValueDao().upsertAll(value)
     }
     latestLocations = locations.mapValues { it.value.last() }
-    println(latestLocations)
+    //println(latestLocations)
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
         var newUser = user.copy(lastLocationValue = latest)
@@ -118,6 +118,9 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         }
         usersDao.upsert(newUser)
     }
+
+
+    // TODO: update bluetooth device locations
 }
 
 // will be called every SHARE_INTERVAL

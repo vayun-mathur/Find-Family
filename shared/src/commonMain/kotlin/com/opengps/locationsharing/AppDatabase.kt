@@ -35,6 +35,16 @@ data class LocationValue(
 
 @Entity
 @Serializable
+data class BluetoothDevice(
+    @PrimaryKey
+    override val id: ULong = 0uL,
+    override val name: String,
+    val address: String,
+    val lastLocationValue: LocationValue? = null,
+): ObjectParent
+
+@Entity
+@Serializable
 data class User(
     @PrimaryKey(autoGenerate = true) override val id: ULong = 0uL,
     override val name: String,
@@ -92,6 +102,16 @@ interface LocationValueDao {
     suspend fun delete(locationValue: LocationValue)
 }
 
+@Dao
+interface BluetoothDeviceDao {
+    @Query("SELECT * FROM BluetoothDevice")
+    suspend fun getAll(): List<BluetoothDevice>
+    @Upsert
+    suspend fun upsert(bluetoothDevice: BluetoothDevice)
+    @Delete
+    suspend fun delete(bluetoothDevice: BluetoothDevice)
+}
+
 class TC {
     @TypeConverter fun fromULong(value: ULong) = value.toLong()
     @TypeConverter fun toULong(value: Long) = value.toULong()
@@ -104,13 +124,14 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class, LocationValue::class], version = 4)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 5)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun waypointDao(): WaypointDao
     abstract fun usersDao(): UsersDao
     abstract fun locationValueDao(): LocationValueDao
+    abstract fun bluetoothDeviceDao(): BluetoothDeviceDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

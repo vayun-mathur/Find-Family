@@ -235,6 +235,18 @@ fun addOrUpdateUserMarker(user: User) {
             UserPicture(user, 50.dp)
         }
 }
+fun addOrUpdateDeviceMarker(device: BluetoothDevice) {
+    val loc = device.lastLocationValue?.coord ?: return
+    val res = doProjection(loc)
+    if(state.hasMarker(device.id.toString()))
+        state.moveMarker(device.id.toString(), res.first, res.second)
+    else
+        state.addMarker(device.id.toString(), res.first, res.second, Offset(-0.5f, -0.5f)) {
+            Box(Modifier.background(Color.Green)) {
+                Text(device.name.first().toString(), Modifier.align(Alignment.Center), color = Color.White)
+            }
+        }
+}
 
 fun addWaypointMarker(waypoint: Waypoint) {
     val res = doProjection(waypoint.coord)
@@ -257,16 +269,18 @@ fun MapView() {
     var objects by remember {mutableStateOf(mapOf<ULong, ObjectParent>())}
     val waypoints by remember { derivedStateOf { objects.values.filterIsInstance<Waypoint>() } }
     val users by remember { derivedStateOf { objects.values.filterIsInstance<User>() } }
+    val devices by remember { derivedStateOf { objects.values.filterIsInstance<BluetoothDevice>() } }
 
     var longHeldPoint by remember { mutableStateOf(Coord(0.0,0.0)) }
 
     val addWaypointPopupEnable = BasicDialog { AddWaypointPopup(longHeldPoint) }
     val addPersonPopupEnable = BasicDialog { AddPersonPopup() }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
+    val addDevicePopupEnable = BasicDialog { AddDevicePopup() }
 
     LaunchedEffect(Unit) {
         SuspendScope {
-            objects = (platform.database.waypointDao().getAll() + usersDao.getAll()).associateBy { it.id }
+            objects = (platform.database.waypointDao().getAll() + usersDao.getAll() + platform.database.bluetoothDeviceDao().getAll()).associateBy { it.id }
             while(Networking.userid == null) { delay(500) }
             if(users.isEmpty()) {
                 val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, true, null, null)
@@ -279,6 +293,9 @@ fun MapView() {
             if(selected is User) {
                 addOrUpdateUserMarker(selected)
                 state.centerOnMarker(selected.id.toString())
+            } else if(selected is BluetoothDevice) {
+                addOrUpdateDeviceMarker(selected)
+                state.centerOnMarker(selected.id.toString())
             } else {
                 users.forEach(::addOrUpdateUserMarker)
                 state.centerOnMarker(Networking.userid.toString())
@@ -286,7 +303,7 @@ fun MapView() {
             waypoints.forEach(::addWaypointMarker)
 
             while(true) {
-                objects = (platform.database.waypointDao().getAll() + usersDao.getAll()).associateBy { it.id }
+                objects = (platform.database.waypointDao().getAll() + usersDao.getAll() + platform.database.bluetoothDeviceDao().getAll()).associateBy { it.id }
                 selectedObject = objects[selectedObject?.id]
                 delay(1000)
             }
@@ -315,7 +332,7 @@ fun MapView() {
         }
     }
 
-    BottomSheetScaffold({SheetContent(selectedObject, users, waypoints)}, topBar = {
+    BottomSheetScaffold({SheetContent(selectedObject, users, waypoints, devices)}, topBar = {
         val actions:  @Composable RowScope.() -> Unit = {
             var expanded by remember { mutableStateOf(false) }
             IconButton({ expanded = true }) {
@@ -328,6 +345,8 @@ fun MapView() {
                     { addTemporaryPersonPopupEnable(); expanded = false })
                 DropdownMenuItem(TextP("Add Saved Location"),
                     { addWaypointPopupEnable(); expanded = false })
+                DropdownMenuItem(TextP("Add Bluetooth Device"),
+                    { addDevicePopupEnable(); expanded = false })
             }
         }
         val navIcon = @Composable {
@@ -420,6 +439,34 @@ fun MapView() {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DialogScope.AddDevicePopup() {
+    var bluetoothDevices by remember { mutableStateOf(listOf<BluetoothDevice>()) }
+    LaunchedEffect(Unit) {
+        SuspendScope {
+            val already = platform.database.bluetoothDeviceDao().getAll()
+            bluetoothDevices = platform.getBluetoothDevices().filter { it !in already }
+        }
+    }
+    Column {
+        Text("Connect a Bluetooth Device", style = MaterialTheme.typography.titleLarge)
+        Text("Devices need to be paired to your phone before they appear here", style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.padding(8.dp))
+        bluetoothDevices.forEach { bluetoothDevice ->
+            ListItem(
+                TextP(bluetoothDevice.name),
+                Modifier.clickable {
+                    SuspendScope {
+                        platform.database.bluetoothDeviceDao().upsert(bluetoothDevice)
+                        close()
+                    }
+                },
+                supportingContent = TextP(bluetoothDevice.address)
+            )
         }
     }
 }
@@ -612,21 +659,41 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
 }
 
 @Composable
-fun SheetContent(selectedObject: ObjectParent?, users: List<User>, waypoints: List<Waypoint>) {
+fun SheetContent(selectedObject: ObjectParent?, users: List<User>, waypoints: List<Waypoint>, devices: List<BluetoothDevice>) {
     when(selectedObject) {
+        is BluetoothDevice -> DeviceSheetContent(selectedObject)
         is User -> UserSheetContent(selectedObject)
         is Waypoint -> WaypointSheetContent(selectedObject, users)
         else -> {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // permanent shares
                 users.filter { it.deleteAt == null }.forEach { UserCard(it, true) }
-                // temporary shares
                 users.filter { it.deleteAt != null }.forEach { UserCard(it, true) }
+                devices.forEach { DeviceCard(it) }
                 waypoints.forEach { WaypointCard(it, users) }
             }
         }
     }
     Spacer(Modifier.height(32.dp))
+}
+
+@Composable
+fun DeviceCard(device: BluetoothDevice) {
+    Card(Modifier.clickable(onClick = { selectedObject = device})) {
+        ListItem(
+            headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) },
+            supportingContent = TextP(device.address)
+        )
+    }
+}
+
+@Composable
+fun DeviceSheetContent(device: BluetoothDevice) {
+    Card(Modifier.clickable(onClick = { selectedObject = device})) {
+        ListItem(
+            headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) },
+            supportingContent = TextP(device.address)
+        )
+    }
 }
 
 @Composable

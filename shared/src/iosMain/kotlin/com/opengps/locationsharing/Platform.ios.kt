@@ -113,6 +113,10 @@ class IOSPlatform: Platform() {
         }
     }
 
+    override fun getBluetoothDevices(): List<BluetoothDevice> {
+        TODO("Not yet implemented")
+    }
+
     override fun runBackgroundService() {
         BackgroundService()
         UIDevice.currentDevice.batteryMonitoringEnabled = true

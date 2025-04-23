@@ -3,6 +3,8 @@ package com.opengps.locationsharing
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationManager
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -24,6 +26,8 @@ import io.matthewnelson.kmp.tor.resource.noexec.tor.ResourceLoaderTorNoExec
 import io.matthewnelson.kmp.tor.runtime.TorRuntime
 import io.matthewnelson.kmp.tor.runtime.service.TorServiceConfig
 import kotlin.random.Random
+import kotlin.random.nextULong
+
 
 private val ServiceConfig = TorServiceConfig.Builder {
     // configure...
@@ -89,6 +93,13 @@ class AndroidPlatform(private val context: Context): Platform() {
         val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         val clipData = android.content.ClipData.newPlainText("text", text)
         clipboardManager.setPrimaryClip(clipData)
+    }
+
+    override fun getBluetoothDevices(): List<BluetoothDevice> {
+        val blm = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val btAdapter: BluetoothAdapter = blm.adapter
+        val pairedDevices = btAdapter.bondedDevices
+        return pairedDevices.map { BluetoothDevice(Random.nextULong(), it.name, it.address) }
     }
 
     override val batteryLevel: Float
