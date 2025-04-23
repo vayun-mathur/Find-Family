@@ -4,12 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.datetime.Clock
-import kotlinx.serialization.Serializable
+import kotlin.random.Random
+import kotlin.random.nextULong
 
-@Serializable
-data class LocationValue(val userid: ULong, val coord: Coord, val speed: Float, val acc: Float, val timestamp: Long, val battery: Float)
-
-var locations by mutableStateOf(mutableMapOf<ULong, MutableList<LocationValue>>())
+var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 
 private val confirmCount by mutableStateOf(mutableMapOf<ULong, UInt>())
@@ -21,6 +19,10 @@ private const val CONFIRMATIONS_REQUIRED = 10u
 private var counter = 100
 
 private suspend fun locationBackend(locationValue: LocationValue) {
+    if(locations.isEmpty()) {
+        locations = platform.database.locationValueDao().getAll().groupBy { it.userid }.toMutableMap()
+    }
+
     val usersDao = platform.database.usersDao()
     var users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
@@ -43,7 +45,8 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }
     for ((key, value) in newLocations) {
         // If the key already exists, add the new list values to the existing list
-        locations.getOrPut(key) { mutableListOf() } += value
+        locations[key] = (locations[key] ?: mutableListOf()) + value
+        platform.database.locationValueDao().upsertAll(value)
     }
     latestLocations = locations.mapValues { it.value.last() }
     println(latestLocations)
@@ -120,6 +123,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 // will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord, speed: Float) {
     if(Networking.userid == null) return
-    val locationValue = LocationValue(Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel)
+    val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel)
     locationBackend(locationValue)
 }

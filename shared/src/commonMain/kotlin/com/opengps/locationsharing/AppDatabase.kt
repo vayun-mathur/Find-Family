@@ -24,6 +24,17 @@ interface ObjectParent {
 
 @Entity
 @Serializable
+data class LocationValue(
+    @PrimaryKey(autoGenerate = true) val id: ULong = 0uL,
+    val userid: ULong,
+    val coord: Coord,
+    val speed: Float,
+    val acc: Float,
+    val timestamp: Long,
+    val battery: Float)
+
+@Entity
+@Serializable
 data class User(
     @PrimaryKey(autoGenerate = true) override val id: ULong = 0uL,
     override val name: String,
@@ -69,6 +80,18 @@ interface UsersDao {
     suspend fun delete(user: User)
 }
 
+@Dao
+interface LocationValueDao {
+    @Query("SELECT * FROM LocationValue")
+    suspend fun getAll(): List<LocationValue>
+    @Upsert
+    suspend fun upsert(locationValue: LocationValue)
+    @Upsert
+    suspend fun upsertAll(locationValue: List<LocationValue>)
+    @Delete
+    suspend fun delete(locationValue: LocationValue)
+}
+
 class TC {
     @TypeConverter fun fromULong(value: ULong) = value.toLong()
     @TypeConverter fun toULong(value: Long) = value.toULong()
@@ -81,12 +104,13 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class], version = 4)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class], version = 4)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun waypointDao(): WaypointDao
     abstract fun usersDao(): UsersDao
+    abstract fun locationValueDao(): LocationValueDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

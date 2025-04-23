@@ -138,6 +138,13 @@ fun Circle(position: Offset, color: Color, borderColor: Color, radius: Float) {
 }
 
 @Composable
+fun Line(start: Offset, end: Offset, color: Color) {
+    DefaultCanvas(Modifier, state) {
+        drawLine(color, start, end)
+    }
+}
+
+@Composable
 fun UserCard(user: User, showSupportingContent: Boolean) {
     val lastUpdatedTime = user.lastLocationValue?.timestamp?.let { timestring(it) } ?: "Never"
     val speed = user.lastLocationValue?.speed?.times(10)?.roundToInt()?.div(10F) ?: 0.0
@@ -346,6 +353,16 @@ fun MapView() {
                     Color(0xffAdd8e6),
                     state.fullSize.height * radius.toFloat()
                 )
+            }
+            (selectedObject as? User)?.let { user ->
+                val locations = locations[user.id] ?: return@let
+                locations.windowed(2).forEach {
+                    val (x1, y1) = doProjection(it[0].coord)
+                    val (x2, y2) = doProjection(it[1].coord)
+                    Line(Offset(state.fullSize.width * x1.toFloat(), state.fullSize.height * y1.toFloat()),
+                        Offset(state.fullSize.width * x2.toFloat(), state.fullSize.height * y2.toFloat()),
+                        Color.Red)
+                }
             }
         }
     }
