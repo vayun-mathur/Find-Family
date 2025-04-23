@@ -2,90 +2,100 @@ import SwiftUI
 import CoreLocation
 import UIKit
 import shared
+import OSLog
 
-class LocationServiceManager: NSObject, ObservableObject {
-    static let shared = LocationServiceManager() // Singleton for easy access
+// Shared state that manages the `CLLocationManager` and `CLBackgroundActivitySession`.
+@MainActor class LocationsHandler: ObservableObject {
 
-    var backgroundActivity: CLBackgroundActivitySession?
-    var service: CLServiceSession?
+	static let shared = LocationsHandler()  // Create a single, shared instance of the object.
+	private let manager: CLLocationManager
+	private var background: CLBackgroundActivitySession?
 
-    private override init() {} // Make it a true singleton
+	@Published
+	var updatesStarted: Bool = UserDefaults.standard.bool(forKey: "liveUpdatesStarted") {
+		didSet { UserDefaults.standard.set(updatesStarted, forKey: "liveUpdatesStarted") }
+	}
 
-    func startLocationUpdates() {
-        Task {
-            do {
-                backgroundActivity = CLBackgroundActivitySession()
-                service = CLServiceSession(authorization: .always)
-                let updates = CLLocationUpdate.liveUpdates()
-                for try await update in updates {
-                    if let location = update.location {
-                        BackgroundServiceKt.onLocationUpdate(arg: location)
-                    }
-                }
-            } catch {
-                debugPrint("Error in location updates: \(error)")
-                // Consider more robust error handling
-                // You might want to attempt to restart the session here in case of an error
-            }
-        }
-    }
+	@Published
+	var backgroundActivity: Bool = UserDefaults.standard.bool(forKey: "BGActivitySessionStarted") {
+		didSet {
+			backgroundActivity ? self.background = CLBackgroundActivitySession() : self.background?.invalidate()
+			UserDefaults.standard.set(backgroundActivity, forKey: "BGActivitySessionStarted")
+		}
+	}
 
-    func recreateServiceSessionIfNeeded(isLaunchedFromLocationEvent: Bool) {
-        if isLaunchedFromLocationEvent {
-            print("App launched in the background due to a location event. Recreating CLServiceSession.")
-            // Invalidate the old session if it exists
-            service?.invalidate()
-            service = nil
-            startLocationUpdates() // Re-initiate the location updates
-        } else if service == nil {
-            print("App launched in the foreground or service is nil. Starting location updates.")
-            startLocationUpdates()
-        }
-    }
+	private init() {
+		self.manager = CLLocationManager()  // Creating a location manager instance is safe to call here in `MainActor`.
+		self.manager.allowsBackgroundLocationUpdates = true
+		locationsArray = [CLLocation]()
+	}
 
-    func invalidateServiceSession() {
-        print("Invalidating CLServiceSession.")
-        service?.invalidate()
-        service = nil
-        backgroundActivity = nil
-    }
-    func ensureServiceSessionIsRunning() {
-        if service == nil {
-            print("Service is nil. Starting location updates.")
-            startLocationUpdates()
-        }
-    }
-}
+	func startLocationUpdates() {
+		if self.manager.authorizationStatus == .notDetermined {
+			self.manager.requestWhenInUseAuthorization()
+		}
+		Logger.services.info("📍 [App] Starting location updates")
+		Task {
+			do {
+				self.updatesStarted = true
+				let updates = CLLocationUpdate.liveUpdates()
+				for try await update in updates {
+					if !self.updatesStarted { break }
+					if let loc = update.location {
+					    print("new location")
+                        BackgroundServiceKt.onLocationUpdate(arg: loc)
+					}
+				}
+			} catch {
+				Logger.services.error("💥 [App] Could not start location updates: \(error.localizedDescription, privacy: .public)")
+			}
+			return
+		}
+	}
 
-@main
-struct iOSApp: App {
-    @Environment(\.scenePhase) private var scenePhase
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate // Connect to AppDelegate
+	func stopLocationUpdates() {
+		Logger.services.info("🛑 [App] Stopping location updates")
+		self.updatesStarted = false
+	}
 
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .onChange(of: scenePhase) { newPhase in
-                    switch newPhase {
-                    case .active:
-                        print("App is active")
-                        LocationServiceManager.shared.ensureServiceSessionIsRunning()
-                    case .inactive:
-                        print("App is inactive")
-                    case .background:
-                        print("App is in the background")
-                        LocationServiceManager.shared.ensureServiceSessionIsRunning()
-                    @unknown default:
-                        print("Unknown scene phase")
-                    }
-                }
-        }
-    }
+	static let DefaultLocation = CLLocationCoordinate2D(latitude: 37.3346, longitude: -122.0090)
+	static var currentLocation: CLLocationCoordinate2D {
+		guard let location = shared.manager.location else {
+			return DefaultLocation
+		}
+		return location.coordinate
+	}
+
+	static var satsInView: Int {
+		var sats = 0
+		if let newLocation = shared.locationsArray.last {
+			sats = 1
+			if newLocation.verticalAccuracy > 0 {
+				sats = 4
+				if 0...5 ~= newLocation.horizontalAccuracy {
+					sats = 12
+				} else if 6...15 ~= newLocation.horizontalAccuracy {
+					sats = 10
+				} else if 16...30 ~= newLocation.horizontalAccuracy {
+					sats = 9
+				} else if 31...45 ~= newLocation.horizontalAccuracy {
+					sats = 7
+				} else if 46...60 ~= newLocation.horizontalAccuracy {
+					sats = 5
+				}
+			} else if newLocation.verticalAccuracy < 0 && 60...300 ~= newLocation.horizontalAccuracy {
+				sats = 3
+			} else if newLocation.verticalAccuracy < 0 && newLocation.horizontalAccuracy > 300 {
+				sats = 2
+			}
+		}
+		return sats
+	}
+
 }
 
 struct ComposeViewController: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        startLocationUpdates()
         return Platform_iosKt.MainViewController()
     }
 
@@ -105,7 +115,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         // Check if the app was launched due to a location event
         isLaunchedFromLocationEvent = launchOptions?[.location] != nil
-        LocationServiceManager.shared.recreateServiceSessionIfNeeded(isLaunchedFromLocationEvent: isLaunchedFromLocationEvent)
+        print("App launched due to \(isLaunchedFromLocationEvent)")
+        LocationsHandler.shared.startLocationUpdates()
+        if LocationsHandler.shared.backgroundActivity {
+            LocationsHandler.shared.backgroundActivity = true
+        }
         return true
     }
 }
