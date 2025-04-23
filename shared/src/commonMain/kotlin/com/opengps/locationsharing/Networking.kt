@@ -5,7 +5,6 @@ import dev.whyoleg.cryptography.algorithms.RSA
 import dev.whyoleg.cryptography.algorithms.SHA512
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.ProxyBuilder
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -157,6 +156,10 @@ class Networking {
             val cipher = privatekey!!.decryptor()
             val decryptedData = cipher.decrypt(encryptedLocation.decodeBase64Bytes()).decodeToString()
             return Json.decodeFromString(decryptedData)
+        }
+
+        suspend fun generateKeyPair(): RSA.OAEP.KeyPair {
+            return crypto.keyPairGenerator(digest = SHA512).generateKey()
         }
 
         @Serializable

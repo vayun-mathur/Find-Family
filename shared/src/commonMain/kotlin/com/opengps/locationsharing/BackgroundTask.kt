@@ -4,7 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,16 +19,25 @@ val confirmType by mutableStateOf(mutableMapOf<ULong, String>())
 const val SHARE_INTERVAL = 3000L
 const val CONFIRMATIONS_REQUIRED = 10u
 
-var counter = 0;
+var counter = 100
 
 private suspend fun locationBackend(locationValue: LocationValue) {
     val platform = getPlatform()
     val usersDao = platform.database.usersDao()
-    val users = usersDao.getAll()
+    var users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
+
+    // remove recipients who were temporary and are no longer valid
+    users = users.filter { user ->
+        if(user.deleteAt != null && user.deleteAt!! < Clock.System.now()) {
+            usersDao.delete(user.id)
+            false
+        } else true
+    }
 
     if(counter++ == 100) {
         Networking.ensureUserExists()
+        counter = 0
     }
 
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }

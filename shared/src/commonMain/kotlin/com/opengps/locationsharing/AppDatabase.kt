@@ -1,6 +1,5 @@
 package com.opengps.locationsharing
 
-import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -30,6 +29,7 @@ data class User(
     var lastCoord: Coord?,
     var lastLocationChangeTime: Instant = Clock.System.now(),
     var lastLocationValue: LocationValue? = null,
+    var deleteAt: Instant? = null,
     var encryptionKey: String? = null,
 )
 
@@ -150,7 +150,7 @@ interface UsersDao {
 
 @Database(
     entities = [Waypoint::class, User::class],
-    version = 3
+    version = 4
 )
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)

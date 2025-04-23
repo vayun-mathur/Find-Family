@@ -31,6 +31,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -60,10 +61,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import dev.whyoleg.cryptography.algorithms.RSA
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.util.encodeBase64
 import io.ktor.utils.io.asSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -104,6 +107,8 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.random.nextULong
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -175,6 +180,7 @@ fun MapView() {
 
     var selectedID by remember { mutableStateOf<ULong?>(null) }
     var addPersonPopupEnabled by remember { mutableStateOf(false) }
+    var addPersonPopupTemporary by remember { mutableStateOf(false) }
     var addWaypointPopupEnable by remember { mutableStateOf(false) }
     var longHeldPoint by remember { mutableStateOf(Coord(0.0,0.0)) }
     var editingWaypoint by remember { mutableStateOf(false) }
@@ -313,18 +319,32 @@ fun MapView() {
 
             ListItem(
                 leadingContent = {
-                    Column(Modifier.width(65.dp)) {
-                        UserPicture(user, 65.dp)
-                        Spacer(Modifier.height(4.dp))
-                        latestLocations[user.id]?.battery?.let {
-                            BatteryBar(it)
+                    if(user.deleteAt == null) {
+                        Column(Modifier.width(65.dp)) {
+                            UserPicture(user, 65.dp)
+                            Spacer(Modifier.height(4.dp))
+                            latestLocations[user.id]?.battery?.let {
+                                BatteryBar(it)
+                            }
                         }
                     }
                                  },
                 headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) },
                 supportingContent = if(showSupportingContent) {
-                    {Text("At ${user.locationName}\nUpdated $lastUpdatedTime\n$sinceString")}
-                } else null, trailingContent = if(showSupportingContent){
+                    {
+                        if(user.deleteAt == null)
+                            Text("At ${user.locationName}\nUpdated $lastUpdatedTime\n$sinceString")
+                        else {
+                            Button({
+                                SuspendScope {
+                                    platform.copyToClipboard("https://findfamily.cc/view/${user.id}/${user.locationName}")
+                                }
+                            }) {
+                                Text("Copy link")
+                            }
+                        }
+                    }
+                } else null, trailingContent = if(showSupportingContent && user.deleteAt == null){
                     {Text("$speed m/s")}
                 } else null)
         }
@@ -425,71 +445,161 @@ fun MapView() {
             contactPhoto = photo
         }
 
-        Box(Modifier.clickable { requestPickContact2() }) {
-            if (contactName.isNotEmpty())
-                UserCard(User(Random.nextULong(), contactName, contactPhoto, "", false, false, null, null), false)
-            else
-                Card {
-                    ListItem(
-                        leadingContent = {
-                            Box(
-                                Modifier.clip(CircleShape).size(50.dp).border(
-                                    2.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    CircleShape
-                                ).background(Color.Green)
-                            )
-                        },
-                        headlineContent = {
-                            Text(
-                                "Select Contact",
-                                fontWeight = FontWeight.Bold
-                            )
-                        })
-                }
-        }
+        var expiryTime by remember { mutableStateOf("15 minutes") }
         var recipientID by remember { mutableStateOf("") }
-        OutlinedTextField(
-            recipientID,
-            { recipientID = it },
-            label = { Text("Contact's User ID") })
 
-        Text("Your contact will also need to enable location sharing within their app by entering ${Networking.userid!!.encodeBase26()}")
-        Button({
-            getPlatform().copyToClipboard(Networking.userid!!.encodeBase26())
-        }) {
-            Text("Copy Your User ID")
-        }
-
-        var receive by remember { mutableStateOf(true) }
+        var receive by remember { mutableStateOf(!addPersonPopupTemporary) }
         var send by remember { mutableStateOf(true) }
-        Column() {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Show on Map")
-                Spacer(Modifier.weight(1f))
-                Checkbox(receive, { receive = it })
+
+        if(!addPersonPopupTemporary) {
+            Box(Modifier.clickable { requestPickContact2() }) {
+                if (contactName.isNotEmpty())
+                    UserCard(
+                        User(
+                            Random.nextULong(),
+                            contactName,
+                            contactPhoto,
+                            "",
+                            false,
+                            false,
+                            null,
+                            null
+                        ), false
+                    )
+                else
+                    Card {
+                        ListItem(
+                            leadingContent = {
+                                Box(
+                                    Modifier.clip(CircleShape).size(50.dp).border(
+                                        2.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        CircleShape
+                                    ).background(Color.Green)
+                                )
+                            },
+                            headlineContent = {
+                                Text(
+                                    "Select Contact",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            })
+                    }
             }
+            OutlinedTextField(
+                recipientID,
+                { recipientID = it },
+                label = { Text("Contact's User ID") })
+
+            Text("Your contact will also need to enable location sharing within their app by entering ${Networking.userid!!.encodeBase26()}")
+            Button({
+                getPlatform().copyToClipboard(Networking.userid!!.encodeBase26())
+            }) {
+                Text("Copy Your User ID")
+            }
+            Column() {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Show on Map")
+                    Spacer(Modifier.weight(1f))
+                    Checkbox(receive, { receive = it })
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Share your location")
+                    Spacer(Modifier.weight(1f))
+                    Checkbox(send, { send = it })
+                }
+            }
+        } else {
+            Text("Currently, the link cannot be accessed by the recipient. Check back after a future update.")
             Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Share your location")
-                Spacer(Modifier.weight(1f))
-                Checkbox(send, { send = it })
+            OutlinedTextField(contactName, { contactName = it; contactPhoto = null }, label = { Text("Name") })
+            Spacer(Modifier.width(16.dp))
+            Column {
+                var expanded by remember { mutableStateOf(false) }
+                OutlinedTextField(
+                    readOnly = true,
+                    value = expiryTime,
+                    onValueChange = { },
+                    label = { Text("Link Expiry in") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = expanded
+                        )
+                    },
+                    colors = ExposedDropdownMenuDefaults.textFieldColors()
+                )
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = {
+                        expanded = false
+                    }
+                ) {
+                    val options = listOf("15 minutes", "30 minutes", "1 hour", "2 hours", "6 hours", "12 hours", "1 day")
+                    options.forEach { selectionOption ->
+                        DropdownMenuItem({
+                            Text(text = selectionOption)
+                        }, {
+                            expiryTime = selectionOption
+                            expanded = false
+                        })
+                    }
+                }
             }
         }
 
         OutlinedButton(
+            
             {
-                val trueID = recipientID.decodeBase26()
-                addPersonPopupEnabled = false
-                val newUser = User(trueID, contactName, contactPhoto, "", receive, send, null, null)
-                users[trueID] = newUser
                 SuspendScope {
+                    val trueID = if (!addPersonPopupTemporary) {
+                        recipientID.decodeBase26()
+                    } else {
+                        Random.nextULong()
+                    }
+                    var encryptionKey: String? = null
+                    var locationName = ""
+
+                    if(addPersonPopupTemporary) {
+                        val keypair = Networking.generateKeyPair()
+                        encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
+                        locationName = keypair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM).encodeBase64()
+                    }
+                    val newUser = User(
+                        trueID,
+                        contactName,
+                        contactPhoto,
+                        locationName,
+                        receive,
+                        send,
+                        null,
+                        null,
+                        deleteAt = if (addPersonPopupTemporary) {
+                            Clock.System.now() + when (expiryTime) {
+                                "15 minutes" -> 15.minutes
+                                "30 minutes" -> 30.minutes
+                                "1 hour" -> 1.hours
+                                "2 hours" -> 2.hours
+                                "6 hours" -> 6.hours
+                                "12 hours" -> 12.hours
+                                "1 day" -> 1.days
+                                else -> throw IllegalStateException("Invalid expiry time for location sharing")
+                            }
+                        } else null,
+                        encryptionKey = encryptionKey
+                    )
+                    users[trueID] = newUser
                     usersDao.upsert(newUser)
+                    addPersonPopupEnabled = false
+                    addPersonPopupTemporary = false
                 }
             },
-            enabled = (contactName.isNotEmpty() && recipientID.isNotEmpty())
+            enabled = if (!addPersonPopupTemporary) (contactName.isNotEmpty() && recipientID.isNotEmpty()) else (contactName.isNotEmpty() && expiryTime.isNotEmpty())
         ) {
-            Text("Start Location Sharing")
+            if(addPersonPopupTemporary)
+                Text("Create Temporary Sharing Link")
+            else
+                Text("Start Location Sharing")
         }
     }
     BottomSheetScaffold(topBar = {
@@ -505,7 +615,11 @@ fun MapView() {
                 ) {
                     DropdownMenuItem(
                         text = { Text("Add Person") },
-                        onClick = { addPersonPopupEnabled = true; expanded = false }
+                        onClick = { addPersonPopupEnabled = true; addPersonPopupTemporary = false; expanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Create Shareable Link") },
+                        onClick = { addPersonPopupEnabled = true; addPersonPopupTemporary = true; expanded = false }
                     )
                     DropdownMenuItem(
                         text = { Text("Add Saved Location") },
@@ -536,7 +650,10 @@ fun MapView() {
     }, sheetContent = {
         if (selectedID == null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                users.values.forEach { UserCard(it, true) }
+                // permanent shares
+                users.values.filter { it.deleteAt == null }.forEach { UserCard(it, true) }
+                // temporary shares
+                users.values.filter { it.deleteAt != null }.forEach { UserCard(it, true) }
                 waypoints.values.forEach { WaypointCard(it) }
             }
         } else if (users[selectedID] != null) {
@@ -546,38 +663,45 @@ fun MapView() {
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Card() {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Show on Map")
-                            Spacer(Modifier.weight(1f))
-                            Checkbox(
-                                users[selectedID]!!.receive,
-                                { recieve ->
-                                    SuspendScope{
-                                        usersDao.update(selectedID!!){ it.copy(receive = recieve) }
-                                    }
-                                })
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Share your location")
-                            Spacer(Modifier.weight(1f))
-                            Checkbox(
-                                users[selectedID]!!.send,
-                                { send ->
-                                    SuspendScope{
-                                        usersDao.update(selectedID!!){ it.copy(send = send)}
-                                    }
-                                })
+                if(users[selectedID]!!.deleteAt == null) {
+                    Card() {
+                        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Show on Map")
+                                Spacer(Modifier.weight(1f))
+                                Checkbox(
+                                    users[selectedID]!!.receive,
+                                    { recieve ->
+                                        SuspendScope {
+                                            usersDao.update(selectedID!!) { it.copy(receive = recieve) }
+                                        }
+                                    })
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Share your location")
+                                Spacer(Modifier.weight(1f))
+                                Checkbox(
+                                    users[selectedID]!!.send,
+                                    { send ->
+                                        SuspendScope {
+                                            usersDao.update(selectedID!!) { it.copy(send = send) }
+                                        }
+                                    })
+                            }
                         }
                     }
+                } else {
+                    val remainingTime = users[selectedID]!!.deleteAt!! - Clock.System.now()
+                    Text("Time remaining: ${remainingTime.inWholeHours} hours, ${remainingTime.inWholeMinutes%60} minutes")
                 }
                 Spacer(Modifier.height(4.dp))
-                OutlinedButton({
-                    requestPickContact1()
-                }) {
-                    Text("Change connected contact")
+                if(users[selectedID]!!.deleteAt == null) {
+                    OutlinedButton({
+                        requestPickContact1()
+                    }) {
+                        Text("Change connected contact")
+                    }
                 }
                 OutlinedButton({
                     SuspendScope {
@@ -586,7 +710,10 @@ fun MapView() {
                         selectedID = null
                     }
                 }) {
-                    Text("Disconnect")
+                    if(users[selectedID]!!.deleteAt == null)
+                        Text("Disconnect")
+                    else
+                        Text("Break link early")
                 }
             }
         } else {
