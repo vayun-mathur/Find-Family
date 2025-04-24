@@ -22,8 +22,9 @@ abstract class Platform {
     abstract fun runBackgroundService()
     abstract fun createNotification(s: String, channelId: String)
     abstract fun copyToClipboard(text: String)
+    abstract fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): ()->Unit
 
-    abstract fun getBluetoothDevices(): List<BluetoothDevice>
+    var nearBluetoothDevices = mutableListOf<BluetoothDevice>()
 
     abstract val batteryLevel: Float
 

@@ -3,8 +3,9 @@ package com.opengps.locationsharing
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationManager
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -95,11 +96,19 @@ class AndroidPlatform(private val context: Context): Platform() {
         clipboardManager.setPrimaryClip(clipData)
     }
 
-    override fun getBluetoothDevices(): List<BluetoothDevice> {
+    override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): ()->Unit {
         val blm = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val btAdapter: BluetoothAdapter = blm.adapter
-        val pairedDevices = btAdapter.bondedDevices
-        return pairedDevices.map { BluetoothDevice(Random.nextULong(), it.name, it.address) }
+        val callback = object: ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                if(result == null) return
+                if(result.device.name == null) return
+                if(!nearBluetoothDevices.any { it.address == result.device.address })
+                    nearBluetoothDevices.add(BluetoothDevice(Random.nextULong(), result.device.name, result.device.address))
+                setRSSI(result.device.address, result.rssi)
+            }
+        }
+        blm.adapter.bluetoothLeScanner.startScan(callback)
+        return {blm.adapter.bluetoothLeScanner.stopScan(callback)}
     }
 
     override val batteryLevel: Float

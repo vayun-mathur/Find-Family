@@ -108,6 +108,8 @@ interface BluetoothDeviceDao {
     suspend fun getAll(): List<BluetoothDevice>
     @Upsert
     suspend fun upsert(bluetoothDevice: BluetoothDevice)
+    @Query("SELECT * FROM BluetoothDevice WHERE address = :address")
+    suspend fun getFromMac(address: String): BluetoothDevice?
     @Delete
     suspend fun delete(bluetoothDevice: BluetoothDevice)
 }

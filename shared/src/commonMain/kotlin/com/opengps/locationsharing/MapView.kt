@@ -242,7 +242,8 @@ fun addOrUpdateDeviceMarker(device: BluetoothDevice) {
         state.moveMarker(device.id.toString(), res.first, res.second)
     else
         state.addMarker(device.id.toString(), res.first, res.second, Offset(-0.5f, -0.5f)) {
-            Box(Modifier.background(Color.Green)) {
+            val modifier = Modifier.clip(CircleShape).size(30.dp).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+            Box(modifier.background(Color.Blue)) {
                 Text(device.name.first().toString(), Modifier.align(Alignment.Center), color = Color.White)
             }
         }
@@ -298,6 +299,7 @@ fun MapView() {
                 state.centerOnMarker(selected.id.toString())
             } else {
                 users.forEach(::addOrUpdateUserMarker)
+                devices.forEach(::addOrUpdateDeviceMarker)
                 state.centerOnMarker(Networking.userid.toString())
             }
             waypoints.forEach(::addWaypointMarker)
@@ -378,63 +380,75 @@ fun MapView() {
                         state.fullSize.height * radius.toFloat()
                     )
                 }
-                (selectedObject as? User)?.let { user ->
-                    val locations = locations[user.id] ?: return@let
-                    locations.windowed(2).forEach {
-                        val (x1, y1) = doProjection(it[0].coord)
-                        val (x2, y2) = doProjection(it[1].coord)
-                        Line(
-                            Offset(
-                                state.fullSize.width * x1.toFloat(),
-                                state.fullSize.height * y1.toFloat()
-                            ),
-                            Offset(
-                                state.fullSize.width * x2.toFloat(),
-                                state.fullSize.height * y2.toFloat()
-                            ),
-                            Color.Red
-                        )
+                val obj = selectedObject
+                if(obj is User || obj is BluetoothDevice) {
+                    locations[obj.id]?.let { locs ->
+                        locs.windowed(2).forEach {
+                            val (x1, y1) = doProjection(it[0].coord)
+                            val (x2, y2) = doProjection(it[1].coord)
+                            Line(
+                                Offset(
+                                    state.fullSize.width * x1.toFloat(),
+                                    state.fullSize.height * y1.toFloat()
+                                ),
+                                Offset(
+                                    state.fullSize.width * x2.toFloat(),
+                                    state.fullSize.height * y2.toFloat()
+                                ),
+                                Color.Red
+                            )
+                        }
                     }
                 }
             }
 
-            (selectedObject as? User)?.let { user ->
-                val locations = locations[user.id] ?: return@let
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-                    Card(Modifier.fillMaxWidth(0.5f)) {
-                        var percentage by remember { mutableStateOf(1.0) }
-                        Slider(
-                            percentage.toFloat(),
-                            { percentage = it.toDouble() },
-                            Modifier.padding(16.dp)
-                        )
-                        // interpolate along locations as a percentage based on the timestamp
-                        val latest = locations.maxOf { it.timestamp }
-                        val oldest = locations.minOf { it.timestamp }
-                        val points = locations.map {
-                            it.timestamp to it.coord
-                        }
-                        val simulatedTimestamp = (percentage * (latest - oldest)).toLong() + oldest
-                        val simulatedLocationFirst = points.find { it.first > simulatedTimestamp }
-                        val simulatedLocationSecond = points.findLast { it.first < simulatedTimestamp }
-                        val simulatedLocation = if (simulatedLocationFirst != null && simulatedLocationSecond != null) {
-                            val ratio = (simulatedTimestamp - simulatedLocationFirst.first) / (simulatedLocationSecond.first - simulatedLocationFirst.first)
-                            Coord(
-                                simulatedLocationFirst.second.lat * (1 - ratio) + simulatedLocationSecond.second.lat * ratio,
-                                simulatedLocationFirst.second.lon * (1 - ratio) + simulatedLocationSecond.second.lon * ratio
+            val obj = selectedObject
+            if(obj is User || obj is BluetoothDevice) {
+                locations[obj.id]?.let { locs ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+                        Card(Modifier.fillMaxWidth(0.5f)) {
+                            var percentage by remember { mutableStateOf(1.0) }
+                            Slider(
+                                percentage.toFloat(),
+                                { percentage = it.toDouble() },
+                                Modifier.padding(16.dp)
                             )
-                        } else if(simulatedLocationFirst != null) {
-                            simulatedLocationFirst.second
-                        } else if(simulatedLocationSecond != null) {
-                            simulatedLocationSecond.second
-                        } else {
-                            null
-                        }
-                        if(simulatedLocation != null) {
-                            val (x, y) = doProjection(simulatedLocation)
-                            state.moveMarker(user.id.toString(), x, y)
-                            val tstr = timestring(simulatedTimestamp)
-                            ListItem(TextP("Showing: ${if(tstr == "just now")"Present" else "Past"}"), supportingContent = TextP(tstr))
+                            // interpolate along locations as a percentage based on the timestamp
+                            val latest = locs.maxOf { it.timestamp }
+                            val oldest = locs.minOf { it.timestamp }
+                            val points = locs.map {
+                                it.timestamp to it.coord
+                            }
+                            val simulatedTimestamp =
+                                (percentage * (latest - oldest)).toLong() + oldest
+                            val simulatedLocationFirst =
+                                points.find { it.first > simulatedTimestamp }
+                            val simulatedLocationSecond =
+                                points.findLast { it.first < simulatedTimestamp }
+                            val simulatedLocation =
+                                if (simulatedLocationFirst != null && simulatedLocationSecond != null) {
+                                    val ratio =
+                                        (simulatedTimestamp - simulatedLocationFirst.first) / (simulatedLocationSecond.first - simulatedLocationFirst.first)
+                                    Coord(
+                                        simulatedLocationFirst.second.lat * (1 - ratio) + simulatedLocationSecond.second.lat * ratio,
+                                        simulatedLocationFirst.second.lon * (1 - ratio) + simulatedLocationSecond.second.lon * ratio
+                                    )
+                                } else if (simulatedLocationFirst != null) {
+                                    simulatedLocationFirst.second
+                                } else if (simulatedLocationSecond != null) {
+                                    simulatedLocationSecond.second
+                                } else {
+                                    null
+                                }
+                            if (simulatedLocation != null) {
+                                val (x, y) = doProjection(simulatedLocation)
+                                state.moveMarker(obj.id.toString(), x, y)
+                                val tstr = timestring(simulatedTimestamp)
+                                ListItem(
+                                    TextP("Showing: ${if (tstr == "just now") "Present" else "Past"}"),
+                                    supportingContent = TextP(tstr)
+                                )
+                            }
                         }
                     }
                 }
@@ -449,7 +463,7 @@ fun DialogScope.AddDevicePopup() {
     LaunchedEffect(Unit) {
         SuspendScope {
             val already = platform.database.bluetoothDeviceDao().getAll()
-            bluetoothDevices = platform.getBluetoothDevices().filter { it !in already }
+            bluetoothDevices = platform.nearBluetoothDevices.filter { it !in already }
         }
     }
     Column {
@@ -693,6 +707,14 @@ fun DeviceSheetContent(device: BluetoothDevice) {
             headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) },
             supportingContent = TextP(device.address)
         )
+    }
+    OutlinedButton({
+        SuspendScope {
+            platform.database.bluetoothDeviceDao().delete(device)
+            selectedObject = null
+        }
+    }) {
+        Text("Stop Tracking")
     }
 }
 

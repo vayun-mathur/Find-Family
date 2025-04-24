@@ -97,7 +97,7 @@ class IOSPlatform: Platform() {
                     picker: CNContactPickerViewController,
                     didSelectContact: CNContact,
                 ) {
-                    val id = didSelectContact.identifier
+                    //val id = didSelectContact.identifier
                     val name = "${didSelectContact.givenName} ${didSelectContact.familyName}".trim()
 
                     //TODO: add image
@@ -113,7 +113,7 @@ class IOSPlatform: Platform() {
         }
     }
 
-    override fun getBluetoothDevices(): List<BluetoothDevice> {
+    override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): () -> Unit {
         TODO("Not yet implemented")
     }
 

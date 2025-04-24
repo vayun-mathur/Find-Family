@@ -3,6 +3,7 @@ package com.opengps.locationsharing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.random.nextULong
@@ -49,7 +50,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         platform.database.locationValueDao().upsertAll(value)
     }
     latestLocations = locations.mapValues { it.value.last() }
-    //println(latestLocations)
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
         var newUser = user.copy(lastLocationValue = latest)
@@ -121,7 +121,30 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 
 
     // TODO: update bluetooth device locations
+    if(bluetoothscancounter % 10 == 0) {
+        val newBluetoothLocations: MutableMap<BluetoothDevice, LocationValue> = mutableMapOf()
+        val stopScan = platform.startScanBluetoothDevices({ mac, rssi ->
+            SuspendScope {
+                val device =
+                    platform.database.bluetoothDeviceDao().getFromMac(mac) ?: return@SuspendScope
+                newBluetoothLocations[device] = locationValue.copy(userid = device.id)
+            }
+        })
+        delay(500)
+        stopScan()
+        // TODO: update bluetooth device locations
+        for ((device, newLocation) in newBluetoothLocations) {
+            println(device)
+            platform.database.locationValueDao().upsert(newLocation)
+            locations[device.id] = (locations[device.id] ?: mutableListOf()) + newLocation
+            platform.database.bluetoothDeviceDao()
+                .upsert(device.copy(lastLocationValue = newLocation))
+        }
+    }
+    bluetoothscancounter++
 }
+
+var bluetoothscancounter = 0
 
 // will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord, speed: Float) {
