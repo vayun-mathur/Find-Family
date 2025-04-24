@@ -791,7 +791,7 @@ fun DialogScope.AddPersonPopup() {
                 trueID,
                 contactName,
                 contactPhoto,
-                "",
+                "Unnamed Location",
                 receive,
                 send,
                 null,
