@@ -15,10 +15,14 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Contacts.CNContact
 import platform.ContactsUI.CNContactPickerDelegateProtocol
 import platform.ContactsUI.CNContactPickerViewController
+import platform.CoreBluetooth.CBCentralManager
+import platform.CoreBluetooth.CBCentralManagerDelegateProtocol
+import platform.CoreBluetooth.CBPeripheral
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSLibraryDirectory
+import platform.Foundation.NSNumber
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
@@ -38,6 +42,7 @@ import platform.UserNotifications.UNUserNotificationCenter
 import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
 import kotlin.random.Random
+import kotlin.random.nextULong
 
 class IOSPlatform: Platform() {
 
@@ -113,8 +118,26 @@ class IOSPlatform: Platform() {
         }
     }
 
+    val cbmanager = CBCentralManager()
     override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): () -> Unit {
-        TODO("Not yet implemented")
+        cbmanager.delegate = object : NSObject(), CBCentralManagerDelegateProtocol {
+            override fun centralManager(
+                central: CBCentralManager,
+                didDiscoverPeripheral: CBPeripheral,
+                advertisementData: Map<Any?, *>,
+                RSSI: NSNumber
+            ) {
+                val address = didDiscoverPeripheral.identifier.UUIDString
+                val name = didDiscoverPeripheral.name?: return
+                if(!nearBluetoothDevices.any { it.address == address })
+                    nearBluetoothDevices.add(BluetoothDevice(Random.nextULong(), name, address))
+                setRSSI(address, RSSI.intValue)
+            }
+
+            override fun centralManagerDidUpdateState(central: CBCentralManager) {}
+        }
+        cbmanager.scanForPeripheralsWithServices(null, null)
+        return {cbmanager.stopScan()}
     }
 
     override fun runBackgroundService() {
