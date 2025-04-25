@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -109,7 +112,13 @@ private const val maxLevel = 19
 private val mapSize = 256 * 2.0.pow(maxLevel).toInt()
 val state = MapState(maxLevel + 1, mapSize, mapSize).apply {
     addLayer({ row, col, zoomLvl ->
-        client.get("https://tile.openstreetmap.org/$zoomLvl/$col/$row.png").bodyAsChannel().asSource()
+        try {
+            client.get("https://tile.openstreetmap.org/$zoomLvl/$col/$row.png").bodyAsChannel()
+                .asSource()
+        } catch(e: Throwable) {
+            e.printStackTrace()
+            null
+        }
     })
     enableZooming()
     disableFlingZoom()
@@ -334,7 +343,13 @@ fun MapView() {
         }
     }
 
-    BottomSheetScaffold({SheetContent(selectedObject, users, waypoints, devices)}, topBar = {
+    BottomSheetScaffold({
+        Column(Modifier.heightIn(max = 400.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                SheetContent(selectedObject, users, waypoints, devices)
+            }
+        }
+                        }, topBar = {
         val actions:  @Composable RowScope.() -> Unit = {
             var expanded by remember { mutableStateOf(false) }
             IconButton({ expanded = true }) {
@@ -343,10 +358,10 @@ fun MapView() {
             DropdownMenu(expanded, { expanded = false }) {
                 DropdownMenuItem(TextP("Add Person"),
                     { addPersonPopupEnable(); expanded = false })
-                DropdownMenuItem(TextP("Create Shareable Link"),
-                    { addTemporaryPersonPopupEnable(); expanded = false })
+                /*DropdownMenuItem(TextP("Create Shareable Link"),
+                    { addTemporaryPersonPopupEnable(); expanded = false })*/
                 DropdownMenuItem(TextP("Add Saved Location"),
-                    { addWaypointPopupEnable(); expanded = false })
+                    { longHeldPoint = doInverseProjection(state.centroidX, state.centroidY); addWaypointPopupEnable(); expanded = false })
                 DropdownMenuItem(TextP("Add Bluetooth Device"),
                     { addDevicePopupEnable(); expanded = false })
             }
