@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import com.opengps.locationsharing.Main
+import com.opengps.locationsharing.Networking
 import com.opengps.locationsharing.platform
 import com.opengps.locationsharing.platformInternal
 
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(Unit) {
+                Networking.init()
                 launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
 

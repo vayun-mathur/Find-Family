@@ -97,18 +97,28 @@ class AndroidPlatform(private val context: Context): Platform() {
     }
 
     override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): ()->Unit {
-        val blm = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val callback = object: ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                if(result == null) return
-                if(result.device.name == null) return
-                if(!nearBluetoothDevices.any { it.address == result.device.address })
-                    nearBluetoothDevices.add(BluetoothDevice(Random.nextULong(), result.device.name, result.device.address))
-                setRSSI(result.device.address, result.rssi)
+        if(PermissionChecker.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PermissionChecker.PERMISSION_GRANTED
+            && PermissionChecker.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PermissionChecker.PERMISSION_GRANTED) {
+            val blm = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            val callback = object : ScanCallback() {
+                override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                    if (result == null) return
+                    if (result.device.name == null) return
+                    if (!nearBluetoothDevices.any { it.address == result.device.address })
+                        nearBluetoothDevices.add(
+                            BluetoothDevice(
+                                Random.nextULong(),
+                                result.device.name,
+                                result.device.address
+                            )
+                        )
+                    setRSSI(result.device.address, result.rssi)
+                }
             }
+            blm.adapter.bluetoothLeScanner.startScan(callback)
+            return { blm.adapter.bluetoothLeScanner.stopScan(callback) }
         }
-        blm.adapter.bluetoothLeScanner.startScan(callback)
-        return {blm.adapter.bluetoothLeScanner.stopScan(callback)}
+        return {}
     }
 
     override val batteryLevel: Float
