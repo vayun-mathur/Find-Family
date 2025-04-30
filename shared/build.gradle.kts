@@ -87,9 +87,9 @@ kotlin {
 
 android {
     namespace = "com.opengps.locationsharing"
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
-        minSdk = 34
+        minSdk = 29
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
