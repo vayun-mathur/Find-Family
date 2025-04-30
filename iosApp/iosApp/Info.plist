@@ -33,6 +33,8 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app uses bluetooth to detect when saved devices are around you</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs to access your location in order to enable location sharing at all times</string>
 	<key>NSLocationAlwaysUsageDescription</key>
