@@ -23,7 +23,7 @@ import shared
 		Task {
 			do {
 				self.background = CLBackgroundActivitySession()
-				self.session = CLServiceSession()
+				self.session = CLServiceSession(authorization: CLServiceSession.AuthorizationRequirement.always)
 				let updates = CLLocationUpdate.liveUpdates()
 				for try await update in updates {
 					if let loc = update.location {
