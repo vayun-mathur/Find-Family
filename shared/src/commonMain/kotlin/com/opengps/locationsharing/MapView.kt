@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -139,19 +140,9 @@ fun UserPicture(user: User, size: Dp) {
     }
 }
 
-@Composable
-fun Circle(position: Offset, color: Color, borderColor: Color, radius: Float) {
-    DefaultCanvas(Modifier, state) {
-        drawCircle(color, radius, position)
-        drawCircle(borderColor, radius, position, style = Stroke(width = 4.dp.toPx()))
-    }
-}
-
-@Composable
-fun Line(start: Offset, end: Offset, color: Color) {
-    DefaultCanvas(Modifier, state) {
-        drawLine(color, start, end)
-    }
+fun DrawScope.Circle(position: Offset, color: Color, borderColor: Color, radius: Float) {
+    drawCircle(color, radius, position)
+    drawCircle(borderColor, radius, position, style = Stroke(width = 4.dp.toPx()))
 }
 
 @Composable
@@ -376,42 +367,45 @@ fun MapView() {
     }) {
         Box {
             MapUI(Modifier.fillMaxSize(), state = state) {
-                waypoints.forEach { waypoint ->
-                    val radiusMeters =
-                        if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
-                    val (origX, origY) =
-                        if (waypoint.id == selectedObject?.id) currentWaypointPosition else doProjection(
-                            waypoint.coord
-                        )
 
-                    val radius = radiusMeters / 12_742_000 / 3 / cos(radians(waypoint.coord.lat))
-                    Circle(
-                        Offset(
-                            state.fullSize.width * origX.toFloat(),
-                            state.fullSize.height * origY.toFloat()
-                        ),
-                        Color(0x80Add8e6),
-                        Color(0xffAdd8e6),
-                        state.fullSize.height * radius.toFloat()
-                    )
-                }
-                val obj = selectedObject
-                if(obj is User || obj is BluetoothDevice) {
-                    locations[obj.id]?.let { locs ->
-                        locs.windowed(2).forEach {
-                            val (x1, y1) = doProjection(it[0].coord)
-                            val (x2, y2) = doProjection(it[1].coord)
-                            Line(
-                                Offset(
-                                    state.fullSize.width * x1.toFloat(),
-                                    state.fullSize.height * y1.toFloat()
-                                ),
-                                Offset(
-                                    state.fullSize.width * x2.toFloat(),
-                                    state.fullSize.height * y2.toFloat()
-                                ),
-                                Color.Red
+                DefaultCanvas(Modifier, state) {
+                    waypoints.forEach { waypoint ->
+                        val radiusMeters =
+                            if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
+                        val (origX, origY) =
+                            if (waypoint.id == selectedObject?.id) currentWaypointPosition else doProjection(
+                                waypoint.coord
                             )
+
+                        val radius =
+                            radiusMeters / 12_742_000 / 3 / cos(radians(waypoint.coord.lat))
+                        Circle(
+                            Offset(
+                                state.fullSize.width * origX.toFloat(),
+                                state.fullSize.height * origY.toFloat()
+                            ),
+                            Color(0x80Add8e6),
+                            Color(0xffAdd8e6),
+                            state.fullSize.height * radius.toFloat()
+                        )
+                    }
+                    val obj = selectedObject
+                    if (obj is User || obj is BluetoothDevice) {
+                        locations[obj.id]?.let { locs ->
+                            locs.windowed(2).forEach {
+                                val (x1, y1) = doProjection(it[0].coord)
+                                val (x2, y2) = doProjection(it[1].coord)
+                                drawLine(Color.Red,
+                                    Offset(
+                                        state.fullSize.width * x1.toFloat(),
+                                        state.fullSize.height * y1.toFloat()
+                                    ),
+                                    Offset(
+                                        state.fullSize.width * x2.toFloat(),
+                                        state.fullSize.height * y2.toFloat()
+                                    )
+                                )
+                            }
                         }
                     }
                 }
