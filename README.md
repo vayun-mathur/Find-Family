@@ -12,9 +12,9 @@ Find Family is a simple, end-to-end encrypted location sharing app for family an
 - Share current speed
 - Show how long person has been at place (saved or not)
 - Show location history
-- Track any bluetooth device
 
 ### In progress:
+- Track any bluetooth device
 - Temporary location sharing via link (openable by web or by app)
 
 ### Todo:
