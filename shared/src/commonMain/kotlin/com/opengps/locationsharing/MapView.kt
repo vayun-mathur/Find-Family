@@ -99,6 +99,7 @@ import ovh.plrapps.mapcompose.api.scale
 import ovh.plrapps.mapcompose.ui.MapUI
 import ovh.plrapps.mapcompose.ui.state.MapState
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -114,7 +115,10 @@ private val mapSize = 256 * 2.0.pow(maxLevel).toInt()
 val state = MapState(maxLevel + 1, mapSize, mapSize).apply {
     addLayer({ row, col, zoomLvl ->
         try {
-            client.get("https://tile.openstreetmap.org/$zoomLvl/$col/$row.png").bodyAsChannel()
+
+            client.get(
+                "https://tile.openstreetmap.org/$zoomLvl/$col/$row.png"
+            ).bodyAsChannel()
                 .asSource()
         } catch(e: Throwable) {
             e.printStackTrace()
@@ -259,8 +263,8 @@ fun addWaypointMarker(waypoint: Waypoint) {
 
 var currentWaypointPosition = Pair(0.0,0.0)
 var currentWaypointRadius = 0.0
-
 var selectedObject by mutableStateOf<ObjectParent?>(null)
+val selectedId by derivedStateOf { selectedObject?.id }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -322,9 +326,9 @@ fun MapView() {
         }
     }
 
-    LaunchedEffect(selectedObject) {
-        if(selectedObject != null)
-            state.centerOnMarker(selectedObject!!.id.toString())
+    LaunchedEffect(selectedId) {
+        if(selectedId != null)
+            state.centerOnMarker(selectedId.toString())
     }
 
     LaunchedEffect(latestLocations) {
@@ -389,25 +393,25 @@ fun MapView() {
                             state.fullSize.height * radius.toFloat()
                         )
                     }
-                    val obj = selectedObject
-                    if (obj is User || obj is BluetoothDevice) {
-                        locations[obj.id]?.let { locs ->
-                            locs.windowed(2).forEach {
-                                val (x1, y1) = doProjection(it[0].coord)
-                                val (x2, y2) = doProjection(it[1].coord)
-                                drawLine(Color.Red,
-                                    Offset(
-                                        state.fullSize.width * x1.toFloat(),
-                                        state.fullSize.height * y1.toFloat()
-                                    ),
-                                    Offset(
-                                        state.fullSize.width * x2.toFloat(),
-                                        state.fullSize.height * y2.toFloat()
-                                    )
-                                )
-                            }
-                        }
-                    }
+//                    val obj = selectedObject
+//                    if (obj is User || obj is BluetoothDevice) {
+//                        locations[obj.id]?.let { locs ->
+//                            locs.windowed(2).forEach {
+//                                val (x1, y1) = doProjection(it[0].coord)
+//                                val (x2, y2) = doProjection(it[1].coord)
+//                                drawLine(Color.Red,
+//                                    Offset(
+//                                        state.fullSize.width * x1.toFloat(),
+//                                        state.fullSize.height * y1.toFloat()
+//                                    ),
+//                                    Offset(
+//                                        state.fullSize.width * x2.toFloat(),
+//                                        state.fullSize.height * y2.toFloat()
+//                                    )
+//                                )
+//                            }
+//                        }
+//                    }
                 }
             }
 
@@ -424,7 +428,7 @@ fun MapView() {
                             )
                             // interpolate along locations as a percentage based on the timestamp
                             val latest = locs.maxOf { it.timestamp }
-                            val oldest = locs.minOf { it.timestamp }
+                            val oldest = max(locs.minOf { it.timestamp }, latest - 1.days.inWholeMilliseconds)
                             val points = locs.map {
                                 it.timestamp to it.coord
                             }
@@ -449,6 +453,9 @@ fun MapView() {
                                 } else {
                                     null
                                 }
+                            LaunchedEffect(simulatedLocation) {
+                                state.centerOnMarker(obj.id.toString())
+                            }
                             if (simulatedLocation != null) {
                                 val (x, y) = doProjection(simulatedLocation)
                                 state.moveMarker(obj.id.toString(), x, y)
