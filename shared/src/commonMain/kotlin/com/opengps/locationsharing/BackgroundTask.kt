@@ -51,10 +51,11 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         locations[key] = (locations[key] ?: mutableListOf()) + value
         platform.database.locationValueDao().upsertAll(value)
     }
-    latestLocations = locations.mapValues { it.value.last() }
+    latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
         var newUser = user.copy(lastLocationValue = latest)
+        println(timestring(latest.timestamp))
 
         // battery level
         if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {
