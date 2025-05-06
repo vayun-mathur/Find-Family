@@ -55,7 +55,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
         var newUser = user.copy(lastLocationValue = latest)
-        println(timestring(latest.timestamp))
 
         // battery level
         if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {
