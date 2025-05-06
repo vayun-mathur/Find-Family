@@ -29,9 +29,6 @@ import shared
 					if let loc = update.location {
 					    print("new location")
                         BackgroundServiceKt.onLocationUpdate(arg: loc)
-                        if loc.accuracyLimited {
-                            BackgroundServiceKt.problem(arg: "Accuracy Limited")
-                        }
                         if loc.authorizationDenied {
                             BackgroundServiceKt.problem(arg: "Auth denied")
                         }
