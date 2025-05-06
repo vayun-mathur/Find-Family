@@ -79,6 +79,16 @@ class Networking {
             return null
         }
 
+        suspend fun problem(arg: String) {
+            data class Problem(val problem: String)
+            checkNetworkDown {
+                client.post("${getUrl()}/api/problem") {
+                    contentType(ContentType.Application.Json)
+                    setBody(Problem(arg))
+                }
+            }
+        }
+
         private suspend fun register() {
             @Serializable
             data class Register(val userid: ULong, val key: String)

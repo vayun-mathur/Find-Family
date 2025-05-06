@@ -1,6 +1,5 @@
 package com.opengps.locationsharing
 
-import io.matthewnelson.kmp.tor.runtime.Action.Companion.startDaemonAsync
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.datetime.Clock
@@ -24,5 +23,12 @@ fun onLocationUpdate(arg: CLLocation) {
     if(Clock.System.now().toEpochMilliseconds() - last_time > SHARE_INTERVAL) {
         last_time = Clock.System.now().toEpochMilliseconds()
         SuspendScope { backgroundTask(coords, arg.speed.toFloat()) }
+    }
+}
+
+fun problem(arg: String) {
+    println(arg)
+    SuspendScope {
+        Networking.problem(arg)
     }
 }
