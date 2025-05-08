@@ -115,8 +115,13 @@ class AndroidPlatform(private val context: Context): Platform() {
                     setRSSI(result.device.address, result.rssi)
                 }
             }
-            blm.adapter.bluetoothLeScanner.startScan(callback)
-            return { blm.adapter.bluetoothLeScanner.stopScan(callback) }
+            if(blm.adapter.bluetoothLeScanner != null) {
+                blm.adapter.bluetoothLeScanner
+                blm.adapter.bluetoothLeScanner.startScan(callback)
+                return { blm.adapter.bluetoothLeScanner.stopScan(callback) }
+            } else {
+                return {}
+            }
         }
         return {}
     }
