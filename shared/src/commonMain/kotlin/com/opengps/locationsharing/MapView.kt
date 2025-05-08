@@ -368,8 +368,8 @@ fun MapView() {
                 }
         }
         TopAppBar(TextP(selectedObject?.name ?: "Location Sharing"), Modifier, navIcon, actions)
-    }) {
-        Box {
+    }, sheetPeekHeight = 200.dp) { padding ->
+        Box(Modifier.padding(padding)) {
             MapUI(Modifier.fillMaxSize(), state = state) {
 
                 DefaultCanvas(Modifier, state) {
