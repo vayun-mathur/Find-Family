@@ -60,7 +60,8 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {
             if(user.id != Networking.userid)
                 platform.createNotification(
-                    "${user.name} is running low on battery",
+                    user.name,
+                    "${user.name} has low battery",
                     "BATTERY_LOW"
                 )
         }
@@ -82,6 +83,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 if(confirmCount.getOrPut(user.id){0u} == CONFIRMATIONS_REQUIRED) {
                     if(user.id != Networking.userid)
                         platform.createNotification(
+                            user.name,
                             "${user.name} entered ${wpIn.name}",
                             "WAYPOINT_ENTER_EXIT"
                         )
@@ -105,6 +107,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 if(confirmCount.getOrPut(user.id){0u} == CONFIRMATIONS_REQUIRED) {
                     if(user.id != Networking.userid)
                         platform.createNotification(
+                            user.name,
                             "${user.name} left ${wasInEarlier.name}",
                             "WAYPOINT_ENTER_EXIT"
                         )

@@ -145,9 +145,10 @@ class IOSPlatform: Platform() {
         UIDevice.currentDevice.batteryMonitoringEnabled = true
     }
 
-    override fun createNotification(s: String, channelId: String) {
+    override fun createNotification(title: String, body: String, channelId: String) {
         val content = UNMutableNotificationContent()
-        content.setTitle(s)
+        content.setTitle(title)
+        content.setBody(body)
         val uuidString = Random.nextLong().toString()
         val request = UNNotificationRequest.requestWithIdentifier(uuidString, content, null)
         val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()

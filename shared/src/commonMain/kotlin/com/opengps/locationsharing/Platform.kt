@@ -20,7 +20,7 @@ abstract class Platform {
     abstract fun requestPickContact(callback: (String, String?)->Unit): ()->Unit
 
     abstract fun runBackgroundService()
-    abstract fun createNotification(s: String, channelId: String)
+    abstract fun createNotification(title: String, body: String, channelId: String)
     abstract fun copyToClipboard(text: String)
     abstract fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): ()->Unit
 

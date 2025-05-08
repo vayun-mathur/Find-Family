@@ -79,10 +79,10 @@ class AndroidPlatform(private val context: Context): Platform() {
         }
     }
 
-    override fun createNotification(s: String, channelId: String) {
+    override fun createNotification(title: String, body: String, channelId: String) {
         val notification = NotificationCompat.Builder(context, channelId)
-            .setContentTitle("Location Sharing")
-            .setContentText(s)
+            .setContentTitle(title)
+            .setContentText(body)
             .setSmallIcon(R.drawable.baseline_notifications_24) // Replace with your icon
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .build()
