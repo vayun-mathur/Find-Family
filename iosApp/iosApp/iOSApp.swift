@@ -29,31 +29,31 @@ import shared
 					if let loc = update.location {
 					    print("new location")
                         BackgroundServiceKt.onLocationUpdate(arg: loc)
-                        if loc.authorizationDenied {
-                            BackgroundServiceKt.problem(arg: "Auth denied")
-                        }
-                        if loc.authorizationDeniedGlobally {
-                            BackgroundServiceKt.problem(arg: "Auth denied globally")
-                        }
-                        if loc.authorizationRequestInProgress {
-                            BackgroundServiceKt.problem(arg: "Auth in progress")
-                        }
-                        if loc.authorizationRestricted {
-                            BackgroundServiceKt.problem(arg: "Auth restricted")
-                        }
-                        if loc.insufficientlyInUse {
-                            BackgroundServiceKt.problem(arg: "Insufficient Use")
-                        }
-                        if loc.locationUnavailable {
-                            BackgroundServiceKt.problem(arg: "Location Unavailable")
-                        }
-                        if loc.serviceSessionRequired {
-                            BackgroundServiceKt.problem(arg: "Service Session required")
-                        }
-                        if loc.stationary {
-                            BackgroundServiceKt.problem(arg: "Stationary")
-                        }
 					}
+					if update.authorizationDenied {
+                        BackgroundServiceKt.problem(arg: "Auth denied")
+                    }
+                    if update.authorizationDeniedGlobally {
+                        BackgroundServiceKt.problem(arg: "Auth denied globally")
+                    }
+                    if update.authorizationRequestInProgress {
+                        BackgroundServiceKt.problem(arg: "Auth in progress")
+                    }
+                    if update.authorizationRestricted {
+                        BackgroundServiceKt.problem(arg: "Auth restricted")
+                    }
+                    if update.insufficientlyInUse {
+                        BackgroundServiceKt.problem(arg: "Insufficient Use")
+                    }
+                    if update.locationUnavailable {
+                        BackgroundServiceKt.problem(arg: "Location Unavailable")
+                    }
+                    if update.serviceSessionRequired {
+                        BackgroundServiceKt.problem(arg: "Service Session required")
+                    }
+                    if update.stationary {
+                        BackgroundServiceKt.problem(arg: "Stationary")
+                    }
 				}
 			} catch {
 				print("💥 [App] Could not start location updates")
