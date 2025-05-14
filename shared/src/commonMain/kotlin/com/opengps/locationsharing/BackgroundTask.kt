@@ -130,23 +130,23 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     }
     println("DONE")
 
-    val newBluetoothLocations: MutableMap<BluetoothDevice, LocationValue> = mutableMapOf()
-    val stopScan = platform.startScanBluetoothDevices({ name, rssi ->
-        SuspendScope {
-            val device =
-                platform.database.bluetoothDeviceDao().getFromName(name) ?: return@SuspendScope
-            newBluetoothLocations[device] = locationValue.copy(userid = device.id)
-        }
-    })
-    delay(2000)
-    stopScan()
-    for ((device, newLocation) in newBluetoothLocations) {
-        println(device)
-        platform.database.locationValueDao().upsert(newLocation)
-        locations[device.id] = (locations[device.id] ?: mutableListOf()) + newLocation
-        platform.database.bluetoothDeviceDao()
-            .upsert(device.copy(lastLocationValue = newLocation))
-    }
+//    val newBluetoothLocations: MutableMap<BluetoothDevice, LocationValue> = mutableMapOf()
+//    val stopScan = platform.startScanBluetoothDevices({ name, rssi ->
+//        SuspendScope {
+//            val device =
+//                platform.database.bluetoothDeviceDao().getFromName(name) ?: return@SuspendScope
+//            newBluetoothLocations[device] = locationValue.copy(userid = device.id)
+//        }
+//    })
+//    delay(2000)
+//    stopScan()
+//    for ((device, newLocation) in newBluetoothLocations) {
+//        println(device)
+//        platform.database.locationValueDao().upsert(newLocation)
+//        locations[device.id] = (locations[device.id] ?: mutableListOf()) + newLocation
+//        platform.database.bluetoothDeviceDao()
+//            .upsert(device.copy(lastLocationValue = newLocation))
+//    }
 }
 
 // will be called every SHARE_INTERVAL

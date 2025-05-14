@@ -96,6 +96,7 @@ class AndroidPlatform(private val context: Context): Platform() {
         clipboardManager.setPrimaryClip(clipData)
     }
 
+    @SuppressLint("MissingPermission")
     override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): ()->Unit {
         if(PermissionChecker.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PermissionChecker.PERMISSION_GRANTED
             && PermissionChecker.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PermissionChecker.PERMISSION_GRANTED) {
@@ -103,13 +104,12 @@ class AndroidPlatform(private val context: Context): Platform() {
             val callback = object : ScanCallback() {
                 override fun onScanResult(callbackType: Int, result: ScanResult?) {
                     if (result == null) return
-                    if (result.device.name == null) return
-                    if (!nearBluetoothDevices.any { it.address == result.device.address })
+                    val name = result.device.alias ?: return
+                    if (!nearBluetoothDevices.any { it.name == name })
                         nearBluetoothDevices.add(
                             BluetoothDevice(
                                 Random.nextULong(),
-                                result.device.name,
-                                result.device.address
+                                name
                             )
                         )
                     setRSSI(result.device.address, result.rssi)
