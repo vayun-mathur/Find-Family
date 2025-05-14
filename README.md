@@ -12,10 +12,10 @@ Find Family is a simple, end-to-end encrypted location sharing app for family an
 - Share current speed
 - Show how long person has been at place (saved or not)
 - Show location history
+- Temporary location sharing via link (opens in website)
 
 ### In progress:
 - Track any bluetooth device
-- Temporary location sharing via link (openable by web or by app)
 
 ### Todo:
 - Connect through Tor hidden service
