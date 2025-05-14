@@ -3,7 +3,6 @@ package com.opengps.locationsharing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.random.nextULong
@@ -44,18 +43,15 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         counter = 0
     }
 
-    println("PRESTART")
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     val recievedLocations = Networking.receiveLocations() ?: listOf()
     val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }
-    println(newLocations)
-    println("START")
+    println(users.filter{ it.send }.map { it.id })
     for ((key, value) in newLocations) {
         // If the key already exists, add the new list values to the existing list
         locations[key] = (locations[key] ?: mutableListOf()) + value
         platform.database.locationValueDao().upsertAll(value)
     }
-    println("MIDDLE")
     latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
@@ -128,7 +124,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         }
         usersDao.upsert(newUser)
     }
-    println("DONE")
 
 //    val newBluetoothLocations: MutableMap<BluetoothDevice, LocationValue> = mutableMapOf()
 //    val stopScan = platform.startScanBluetoothDevices({ name, rssi ->

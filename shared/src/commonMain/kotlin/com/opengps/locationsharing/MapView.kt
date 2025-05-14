@@ -40,6 +40,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -353,8 +354,8 @@ fun MapView() {
             DropdownMenu(expanded, { expanded = false }) {
                 DropdownMenuItem(TextP("Add Person"),
                     { addPersonPopupEnable(); expanded = false })
-                /*DropdownMenuItem(TextP("Create Shareable Link"),
-                    { addTemporaryPersonPopupEnable(); expanded = false })*/
+                DropdownMenuItem(TextP("Create Shareable Link"),
+                    { addTemporaryPersonPopupEnable(); expanded = false })
                 DropdownMenuItem(TextP("Add Saved Location"),
                     { longHeldPoint = doInverseProjection(state.centroidX, state.centroidY); addWaypointPopupEnable(); expanded = false })
 //                DropdownMenuItem(TextP("Add Bluetooth Device"),
@@ -829,13 +830,20 @@ fun DialogScope.AddPersonPopupTemporary() {
     Spacer(Modifier.width(16.dp))
     Column {
         var expanded by remember { mutableStateOf(false) }
-        OutlinedTextField(expiryTime, {}, readOnly = true, label = TextP("Link Expiry in"),
+        OutlinedTextField(expiryTime, {}, Modifier.clickable { expanded = true }, readOnly = true, enabled = false, label = TextP("Link Expiry in"),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(
                     expanded = expanded
                 )
             },
-            colors = ExposedDropdownMenuDefaults.textFieldColors()
+            colors = OutlinedTextFieldDefaults.colors().copy(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledIndicatorColor = MaterialTheme.colorScheme.outline,
+                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                //For Icons
+                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant)
         )
         DropdownMenu(expanded, { expanded = false }) {
             listOf("15 minutes", "30 minutes", "1 hour", "2 hours", "6 hours", "12 hours", "1 day").forEach { selectionOption ->
