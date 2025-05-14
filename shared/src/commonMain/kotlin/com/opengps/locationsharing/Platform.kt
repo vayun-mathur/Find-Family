@@ -47,8 +47,13 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         connection.execSQL("ALTER TABLE User ADD COLUMN deleteAt BIGINT")
     }
 }
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE BluetoothDevice DROP COLUMN address")
+    }
+}
 
-val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_5_6)
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =
     PreferenceDataStoreFactory.createWithPath(

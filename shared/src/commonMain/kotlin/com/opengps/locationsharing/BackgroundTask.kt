@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.random.nextULong
+import kotlin.time.Duration.Companion.days
 
 var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
@@ -14,7 +15,7 @@ var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 private val confirmCount by mutableStateOf(mutableMapOf<ULong, UInt>())
 private val confirmType by mutableStateOf(mutableMapOf<ULong, String>())
 
-const val SHARE_INTERVAL = 30000L
+const val SHARE_INTERVAL = 10000L
 private const val CONFIRMATIONS_REQUIRED = 10u
 
 private var counter = 100
@@ -22,7 +23,8 @@ private var counter = 100
 private suspend fun locationBackend(locationValue: LocationValue) {
     println("updated location")
     if(locations.isEmpty()) {
-        locations = platform.database.locationValueDao().getAll().groupBy { it.userid }.toMutableMap()
+        platform.database.locationValueDao().clearBefore((Clock.System.now() - 1.days).toEpochMilliseconds())
+        locations = platform.database.locationValueDao().getSince((Clock.System.now() - 1.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
     }
 
     val usersDao = platform.database.usersDao()
@@ -42,15 +44,18 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         counter = 0
     }
 
+    println("PRESTART")
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
-    val recievedLocations = Networking.receiveLocations() ?: return
+    val recievedLocations = Networking.receiveLocations() ?: listOf()
     val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }
     println(newLocations)
+    println("START")
     for ((key, value) in newLocations) {
         // If the key already exists, add the new list values to the existing list
         locations[key] = (locations[key] ?: mutableListOf()) + value
         platform.database.locationValueDao().upsertAll(value)
     }
+    println("MIDDLE")
     latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
@@ -123,33 +128,26 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         }
         usersDao.upsert(newUser)
     }
+    println("DONE")
 
-
-    // TODO: update bluetooth device locations
-    if(bluetoothscancounter % 10 == 0) {
-        val newBluetoothLocations: MutableMap<BluetoothDevice, LocationValue> = mutableMapOf()
-        val stopScan = platform.startScanBluetoothDevices({ mac, rssi ->
-            SuspendScope {
-                val device =
-                    platform.database.bluetoothDeviceDao().getFromMac(mac) ?: return@SuspendScope
-                newBluetoothLocations[device] = locationValue.copy(userid = device.id)
-            }
-        })
-        delay(500)
-        stopScan()
-        // TODO: update bluetooth device locations
-        for ((device, newLocation) in newBluetoothLocations) {
-            println(device)
-            platform.database.locationValueDao().upsert(newLocation)
-            locations[device.id] = (locations[device.id] ?: mutableListOf()) + newLocation
-            platform.database.bluetoothDeviceDao()
-                .upsert(device.copy(lastLocationValue = newLocation))
+    val newBluetoothLocations: MutableMap<BluetoothDevice, LocationValue> = mutableMapOf()
+    val stopScan = platform.startScanBluetoothDevices({ name, rssi ->
+        SuspendScope {
+            val device =
+                platform.database.bluetoothDeviceDao().getFromName(name) ?: return@SuspendScope
+            newBluetoothLocations[device] = locationValue.copy(userid = device.id)
         }
+    })
+    delay(2000)
+    stopScan()
+    for ((device, newLocation) in newBluetoothLocations) {
+        println(device)
+        platform.database.locationValueDao().upsert(newLocation)
+        locations[device.id] = (locations[device.id] ?: mutableListOf()) + newLocation
+        platform.database.bluetoothDeviceDao()
+            .upsert(device.copy(lastLocationValue = newLocation))
     }
-    bluetoothscancounter++
 }
-
-var bluetoothscancounter = 0
 
 // will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord, speed: Float) {

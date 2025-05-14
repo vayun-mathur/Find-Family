@@ -357,8 +357,8 @@ fun MapView() {
                     { addTemporaryPersonPopupEnable(); expanded = false })*/
                 DropdownMenuItem(TextP("Add Saved Location"),
                     { longHeldPoint = doInverseProjection(state.centroidX, state.centroidY); addWaypointPopupEnable(); expanded = false })
-                DropdownMenuItem(TextP("Add Bluetooth Device"),
-                    { addDevicePopupEnable(); expanded = false })
+//                DropdownMenuItem(TextP("Add Bluetooth Device"),
+//                    { addDevicePopupEnable(); expanded = false })
             }
         }
         val navIcon = @Composable {
@@ -494,8 +494,7 @@ fun DialogScope.AddDevicePopup() {
                         platform.database.bluetoothDeviceDao().upsert(bluetoothDevice)
                         close()
                     }
-                },
-                supportingContent = TextP(bluetoothDevice.address)
+                }
             )
         }
     }
@@ -710,8 +709,7 @@ fun SheetContent(selectedObject: ObjectParent?, users: List<User>, waypoints: Li
 fun DeviceCard(device: BluetoothDevice) {
     Card(Modifier.clickable(onClick = { selectedObject = device})) {
         ListItem(
-            headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) },
-            supportingContent = TextP(device.address)
+            headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) }
         )
     }
 }
@@ -720,8 +718,7 @@ fun DeviceCard(device: BluetoothDevice) {
 fun DeviceSheetContent(device: BluetoothDevice) {
     Card(Modifier.clickable(onClick = { selectedObject = device})) {
         ListItem(
-            headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) },
-            supportingContent = TextP(device.address)
+            headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) }
         )
     }
     OutlinedButton({

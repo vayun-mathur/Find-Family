@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.opengps.locationsharing.android"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "cc.findfamily.app"
         minSdk = 34

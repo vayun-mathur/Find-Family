@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -39,7 +40,6 @@ data class BluetoothDevice(
     @PrimaryKey
     override val id: ULong = 0uL,
     override val name: String,
-    val address: String,
     val lastLocationValue: LocationValue? = null,
 ): ObjectParent
 
@@ -94,6 +94,10 @@ interface UsersDao {
 interface LocationValueDao {
     @Query("SELECT * FROM LocationValue")
     suspend fun getAll(): List<LocationValue>
+    @Query("SELECT * FROM LocationValue WHERE timestamp > :timestamp")
+    suspend fun getSince(timestamp: Long): List<LocationValue>
+    @Query("DELETE FROM LocationValue WHERE timestamp > :timestamp")
+    suspend fun clearBefore(timestamp: Long)
     @Upsert
     suspend fun upsert(locationValue: LocationValue)
     @Upsert
@@ -108,8 +112,8 @@ interface BluetoothDeviceDao {
     suspend fun getAll(): List<BluetoothDevice>
     @Upsert
     suspend fun upsert(bluetoothDevice: BluetoothDevice)
-    @Query("SELECT * FROM BluetoothDevice WHERE address = :address")
-    suspend fun getFromMac(address: String): BluetoothDevice?
+    @Query("SELECT * FROM BluetoothDevice WHERE name = :name")
+    suspend fun getFromName(name: String): BluetoothDevice?
     @Delete
     suspend fun delete(bluetoothDevice: BluetoothDevice)
 }
@@ -126,7 +130,7 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 5)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 6)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
