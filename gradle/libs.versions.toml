@@ -65,7 +65,7 @@ androidx-room-paging = { group = "androidx.room", name = "room-paging", version.
 resource-noexec-tor = { module = "io.matthewnelson.kmp-tor:resource-noexec-tor", version.ref = "resourceNoexecTor" }
 runtime = { module = "io.matthewnelson.kmp-tor:runtime", version.ref = "runtime" }
 runtime-service-ui = { module = "io.matthewnelson.kmp-tor:runtime-service-ui", version.ref = "runtimeServiceUi" }
-
+maplibre-compose = { module = "dev.sargunv.maplibre-compose:maplibre-compose", version = "0.6.0" }
 
 
 [plugins]

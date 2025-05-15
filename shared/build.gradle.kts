@@ -52,7 +52,6 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
-            implementation(libs.mapcompose.mp)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.core)
@@ -63,6 +62,7 @@ kotlin {
 
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
+            implementation(libs.maplibre.compose)
 
         }
         androidMain.dependencies {
@@ -84,6 +84,10 @@ kotlin {
         }
     }
 }
+
+//cocoapods {
+//    pod("MapLibre", "6.9.0")
+//}
 
 android {
     namespace = "com.opengps.locationsharing"

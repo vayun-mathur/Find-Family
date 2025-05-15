@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,7 +25,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
@@ -59,19 +59,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import dev.sargunv.maplibrecompose.compose.CameraState
+import dev.sargunv.maplibrecompose.compose.ClickResult
+import dev.sargunv.maplibrecompose.compose.MaplibreMap
+import dev.sargunv.maplibrecompose.compose.rememberCameraState
+import dev.sargunv.maplibrecompose.core.GestureSettings
 import dev.whyoleg.cryptography.algorithms.RSA
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.cache.HttpCache
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsChannel
+import io.github.dellisd.spatialk.geojson.Position
 import io.ktor.util.encodeBase64
-import io.ktor.utils.io.asSource
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -81,55 +89,17 @@ import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.toLocalDateTime
-import ovh.plrapps.mapcompose.api.DefaultCanvas
-import ovh.plrapps.mapcompose.api.addLayer
-import ovh.plrapps.mapcompose.api.addMarker
-import ovh.plrapps.mapcompose.api.centerOnMarker
-import ovh.plrapps.mapcompose.api.centroidX
-import ovh.plrapps.mapcompose.api.centroidY
-import ovh.plrapps.mapcompose.api.disableFlingZoom
-import ovh.plrapps.mapcompose.api.enableZooming
-import ovh.plrapps.mapcompose.api.fullSize
-import ovh.plrapps.mapcompose.api.hasMarker
-import ovh.plrapps.mapcompose.api.moveMarker
-import ovh.plrapps.mapcompose.api.onLongPress
-import ovh.plrapps.mapcompose.api.onMarkerClick
-import ovh.plrapps.mapcompose.api.onTap
-import ovh.plrapps.mapcompose.api.removeAllMarkers
-import ovh.plrapps.mapcompose.api.scale
-import ovh.plrapps.mapcompose.ui.MapUI
-import ovh.plrapps.mapcompose.ui.state.MapState
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-
-val client = HttpClient { install(HttpCache) }
-private const val maxLevel = 19
-private val mapSize = 256 * 2.0.pow(maxLevel).toInt()
-val state = MapState(maxLevel + 1, mapSize, mapSize).apply {
-    addLayer({ row, col, zoomLvl ->
-        try {
-
-            client.get(
-                "https://tile.openstreetmap.org/$zoomLvl/$col/$row.png"
-            ).bodyAsChannel()
-                .asSource()
-        } catch(e: Throwable) {
-            e.printStackTrace()
-            null
-        }
-    })
-    enableZooming()
-    disableFlingZoom()
-}
 
 @Composable
 fun TextP(text: String) = @Composable {Text(text)}
@@ -148,7 +118,19 @@ fun UserPicture(user: User, size: Dp) {
 
 fun DrawScope.Circle(position: Offset, color: Color, borderColor: Color, radius: Float) {
     drawCircle(color, radius, position)
-    drawCircle(borderColor, radius, position, style = Stroke(width = 4.dp.toPx()))
+    drawCircle(borderColor, radius, position, style = Stroke(width = radius/20))
+}
+
+fun DrawScope.CenteredText(textMeasurer: TextMeasurer, text: String, position: Offset, color: Color = Color.Black) {
+    try {
+        drawText(textMeasurer, text, position - textMeasurer.measure(text).size / 2, style = TextStyle(color = color))
+    } catch(e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+operator fun Offset.minus(intSize: IntSize): Offset {
+    return Offset(x - intSize.width, y - intSize.height)
 }
 
 @Composable
@@ -232,46 +214,27 @@ fun WaypointCard(waypoint: Waypoint, users: List<User>) {
     }
 }
 
-fun addOrUpdateUserMarker(user: User) {
-    val loc = user.lastLocationValue?.coord ?: return
-    val res = doProjection(loc)
-    if(state.hasMarker(user.id.toString()))
-        state.moveMarker(user.id.toString(), res.first, res.second)
-    else
-        state.addMarker(user.id.toString(), res.first, res.second, Offset(-0.5f, -0.5f)) {
-            UserPicture(user, 50.dp)
-        }
-}
-fun addOrUpdateDeviceMarker(device: BluetoothDevice) {
-    val loc = device.lastLocationValue?.coord ?: return
-    val res = doProjection(loc)
-    if(state.hasMarker(device.id.toString()))
-        state.moveMarker(device.id.toString(), res.first, res.second)
-    else
-        state.addMarker(device.id.toString(), res.first, res.second, Offset(-0.5f, -0.5f)) {
-            val modifier = Modifier.clip(CircleShape).size(30.dp).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-            Box(modifier.background(Color.Blue)) {
-                Text(device.name.first().toString(), Modifier.align(Alignment.Center), color = Color.White)
-            }
-        }
-}
-
-fun addWaypointMarker(waypoint: Waypoint) {
-    val res = doProjection(waypoint.coord)
-    state.addMarker(waypoint.id.toString(), res.first, res.second) {
-        if(state.scale > 0.6)
-            Icon(Icons.Default.LocationOn, null, tint = Color.Blue)
-    }
-}
-
-var currentWaypointPosition by mutableStateOf(Pair(0.0,0.0))
+var currentWaypointPosition by mutableStateOf(Coord(0.0,0.0))
 var currentWaypointRadius by mutableStateOf(0.0)
 var selectedObject by mutableStateOf<ObjectParent?>(null)
-val selectedId by derivedStateOf { selectedObject?.id }
+
+private lateinit var camera: CameraState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapView() {
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    camera = rememberCameraState()
+
+    var initialized by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        SuspendScope {
+            camera.awaitInitialized()
+            initialized = true
+        }
+    }
+
     val usersDao = platform.database.usersDao()
 
     var objects by remember {mutableStateOf(mapOf<ULong, ObjectParent>())}
@@ -295,45 +258,24 @@ fun MapView() {
                 objects = objects + (newUser.id to newUser)
             }
 
-            state.removeAllMarkers()
-            val selected = selectedObject
-            if(selected is User) {
-                addOrUpdateUserMarker(selected)
-                state.centerOnMarker(selected.id.toString())
-            } else if(selected is BluetoothDevice) {
-                addOrUpdateDeviceMarker(selected)
-                state.centerOnMarker(selected.id.toString())
-            } else {
-                users.forEach(::addOrUpdateUserMarker)
-                devices.forEach(::addOrUpdateDeviceMarker)
-                state.centerOnMarker(Networking.userid.toString())
-            }
-            waypoints.forEach(::addWaypointMarker)
-
             while(true) {
                 objects = (platform.database.waypointDao().getAll() + usersDao.getAll() + platform.database.bluetoothDeviceDao().getAll()).associateBy { it.id }
                 selectedObject = objects[selectedObject?.id]
                 delay(1000)
             }
         }
-        state.onTap { _, _ ->
-            selectedObject = null
-        }
-        state.onMarkerClick { id, x, y ->
-            selectedObject = objects[id.toULong()]
-            isEditingWaypoint = false
-        }
     }
 
-    LaunchedEffect(selectedId) {
-        if(selectedId != null)
-            state.centerOnMarker(selectedId.toString())
-    }
-
-    LaunchedEffect(latestLocations) {
-        users.forEach { user ->
-            if(user.lastLocationValue == null) return@forEach
-            addOrUpdateUserMarker(user)
+    LaunchedEffect(selectedObject) {
+        val obj = selectedObject
+        if(obj is User && obj.lastLocationValue != null) {
+            camera.animateTo(camera.position.copy(target = Position(obj.lastLocationValue!!.coord.lon, obj.lastLocationValue!!.coord.lat), zoom = max(camera.position.zoom, 14.0)))
+        }
+        if(obj is BluetoothDevice && obj.lastLocationValue != null) {
+            camera.animateTo(camera.position.copy(target = Position(obj.lastLocationValue.coord.lon, obj.lastLocationValue.coord.lat), zoom = max(camera.position.zoom, 14.0)))
+        }
+        if(obj is Waypoint) {
+            camera.animateTo(camera.position.copy(target = Position(obj.coord.lon, obj.coord.lat), zoom = max(camera.position.zoom, 14.0)))
         }
     }
 
@@ -355,13 +297,12 @@ fun MapView() {
                 DropdownMenuItem(TextP("Create Shareable Link"),
                     { addTemporaryPersonPopupEnable(); expanded = false })
                 DropdownMenuItem(TextP("Add Saved Location"),
-                    { longHeldPoint = doInverseProjection(state.centroidX, state.centroidY);
-                        val newWaypoint = Waypoint(Random.nextULong(), "New Saved Place", 100.0, longHeldPoint, mutableListOf())
+                    {
+                        val newWaypoint = Waypoint(Random.nextULong(), "New Saved Place", 100.0, Coord(camera.position.target.latitude, camera.position.target.longitude), mutableListOf())
                         objects = objects + (newWaypoint.id to newWaypoint)
                         SuspendScope {
                             platform.database.waypointDao().upsert(newWaypoint)
                         }
-                        addWaypointMarker(newWaypoint)
                         selectedObject = newWaypoint
                         isEditingWaypoint = true
                         expanded = false })
@@ -377,49 +318,93 @@ fun MapView() {
         }
         TopAppBar(TextP(selectedObject?.name ?: "Location Sharing"), Modifier, navIcon, actions)
     }, sheetPeekHeight = 200.dp) { padding ->
-        Box(Modifier.padding(padding)) {
-            MapUI(Modifier.fillMaxSize(), state = state) {
 
-                DefaultCanvas(Modifier, state) {
-                    waypoints.forEach { waypoint ->
+        Box(Modifier.padding(padding).fillMaxSize()) {
+            val density = LocalDensity.current
+            MaplibreMap(styleUri = "https://tiles.openfreemap.org/styles/liberty",
+                gestureSettings = GestureSettings(
+                    isTiltGesturesEnabled = false,
+                    isZoomGesturesEnabled = true,
+                    isRotateGesturesEnabled = false,
+                    isScrollGesturesEnabled = true,
+                ), cameraState = camera,
+                onMapClick = { position, offset ->
+                    for (user in users) {
+                        if(user.lastLocationValue == null) continue
+                        val center = camera.screenLocationFromPosition(
+                            Position(
+                                user.lastLocationValue!!.coord.lon,
+                                user.lastLocationValue!!.coord.lat
+                            )
+                        )
+                        if((center - offset).getDistance() * density.density < 80) {
+                            selectedObject = user
+                            return@MaplibreMap ClickResult.Pass
+                        }
+                    }
+                    for (waypoint in waypoints) {
+                        val center = camera.screenLocationFromPosition(
+                            Position(
+                                waypoint.coord.lon,
+                                waypoint.coord.lat
+                            )
+                        )
+                        if((center - offset).getDistance() * density.density < 80) {
+                            selectedObject = waypoint
+                            return@MaplibreMap ClickResult.Pass
+                        }
+                    }
+                    ClickResult.Pass
+                }
+            )
+            val textMeasurer = rememberTextMeasurer()
+            Canvas(Modifier.fillMaxSize()) {
+                if(initialized) {
+                    for (waypoint in waypoints) {
                         val radiusMeters =
                             if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
-                        val (origX, origY) =
-                            if (waypoint.id == selectedObject?.id) currentWaypointPosition else doProjection(
-                                waypoint.coord
-                            )
+                        val (lat, lon) =
+                            if (waypoint.id == selectedObject?.id) currentWaypointPosition else waypoint.coord
 
-                        val radius =
-                            radiusMeters / 12_742_000 / 3 / cos(radians(waypoint.coord.lat))
+                        val center = camera.screenLocationFromPosition(Position(lon, lat))
+                        if(center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
+                        val circumferenceAtLatitude = 40_075_000 * cos(radians(waypoint.coord.lat))
+                        val radiusInDegrees = 360 * radiusMeters / circumferenceAtLatitude
+                        val edgePoint = camera.screenLocationFromPosition(
+                            Position(lon + radiusInDegrees, lat))
+                        val radiusPx = abs((center.x - edgePoint.x).toPx())
+                        println(radiusInDegrees)
                         Circle(
-                            Offset(
-                                state.fullSize.width * origX.toFloat(),
-                                state.fullSize.height * origY.toFloat()
-                            ),
+                            Offset(center.x.toPx(), center.y.toPx()),
                             Color(0x80Add8e6),
                             Color(0xffAdd8e6),
-                            state.fullSize.height * radius.toFloat()
-                        )
+                            radiusPx)
                     }
-//                    val obj = selectedObject
-//                    if (obj is User || obj is BluetoothDevice) {
-//                        locations[obj.id]?.let { locs ->
-//                            locs.windowed(2).forEach {
-//                                val (x1, y1) = doProjection(it[0].coord)
-//                                val (x2, y2) = doProjection(it[1].coord)
-//                                drawLine(Color.Red,
-//                                    Offset(
-//                                        state.fullSize.width * x1.toFloat(),
-//                                        state.fullSize.height * y1.toFloat()
-//                                    ),
-//                                    Offset(
-//                                        state.fullSize.width * x2.toFloat(),
-//                                        state.fullSize.height * y2.toFloat()
-//                                    )
-//                                )
-//                            }
-//                        }
-//                    }
+                    for (user in users) {
+                        if(user.lastLocationValue == null) continue
+                        val center = camera.screenLocationFromPosition(
+                            Position(
+                                user.lastLocationValue!!.coord.lon,
+                                user.lastLocationValue!!.coord.lat
+                            )
+                        )
+                        if(center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
+
+                        Circle(
+                            Offset(center.x.toPx(), center.y.toPx()),
+                            Color.Green,
+                            primaryColor,
+                            75f
+                        )
+                        CenteredText(
+                            textMeasurer,
+                            "" + user.name[0],
+                            Offset(center.x.toPx(), center.y.toPx()),
+                            color = primaryColor
+                        )
+
+                        // todo: show profile photo
+                    }
                 }
             }
 
@@ -462,11 +447,11 @@ fun MapView() {
                                     null
                                 }
                             LaunchedEffect(simulatedLocation) {
-                                state.centerOnMarker(obj.id.toString())
+                                if(simulatedLocation != null)
+                                    camera.animateTo(camera.position.copy(target = Position(simulatedLocation.lon, simulatedLocation.lat)))
                             }
                             if (simulatedLocation != null) {
                                 val (x, y) = doProjection(simulatedLocation)
-                                state.moveMarker(obj.id.toString(), x, y)
                                 val tstr = timestring(simulatedTimestamp)
                                 ListItem(
                                     TextP("Showing: ${if (tstr == "just now") "Present" else "Past"}"),
@@ -479,6 +464,11 @@ fun MapView() {
             }
         }
     }
+}
+
+private fun DpOffset.getDistance(): Float {
+    return sqrt(x.value * x.value + y.value * y.value)
+
 }
 
 @Composable
@@ -543,7 +533,6 @@ fun UserSheetContent(user: User) {
     val requestPickContact1 = platform.requestPickContact { name, photo ->
         SuspendScope {
             usersDao.upsert(user.copy(name = name, photo = photo))
-            addOrUpdateUserMarker(user)
         }
     }
     UserCard(user, true)
@@ -611,13 +600,13 @@ var isEditingWaypoint by mutableStateOf(false)
 fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
 
     LaunchedEffect(waypoint) {
-        currentWaypointPosition = doProjection(waypoint.coord)
+        currentWaypointPosition = waypoint.coord
         currentWaypointRadius = waypoint.range
     }
-    LaunchedEffect(state.centroidY, state.centroidX) {
+
+    LaunchedEffect(camera.position.target.latitude, camera.position.target.longitude) {
         if(isEditingWaypoint) {
-            state.moveMarker(waypoint.id.toString(), state.centroidX, state.centroidY)
-            currentWaypointPosition = Pair(state.centroidX, state.centroidY)
+            currentWaypointPosition = Coord(camera.position.target.latitude, camera.position.target.longitude)
         }
     }
 
@@ -641,18 +630,14 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
         OutlinedButton(
             {
                 if (!isEditingWaypoint) {
-                    currentWaypointPosition = doProjection(waypoint.coord)
+                    currentWaypointPosition = waypoint.coord
                     currentWaypointRadius = waypoint.range
                     SuspendScope {
-                        state.centerOnMarker(waypoint.id.toString())
+                        camera.animateTo(camera.position.copy(target = Position(currentWaypointPosition.lon, currentWaypointPosition.lat)))
                     }
                 } else {
-                    val coord = doInverseProjection(
-                        currentWaypointPosition.first,
-                        currentWaypointPosition.second
-                    )
                     SuspendScope {
-                        platform.database.waypointDao().upsert(waypoint.copy(coord = coord, name = waypointNewName(), range = waypointNewRadius().toDouble()))
+                        platform.database.waypointDao().upsert(waypoint.copy(coord = currentWaypointPosition, name = waypointNewName(), range = waypointNewRadius().toDouble()))
                     }
                 }
                 isEditingWaypoint = !isEditingWaypoint
@@ -748,8 +733,6 @@ fun DeviceSheetContent(device: BluetoothDevice) {
 
 @Composable
 fun DialogScope.AddPersonPopup() {
-    var receive by remember { mutableStateOf(true) }
-    var send by remember { mutableStateOf(true) }
     var contactName by remember { mutableStateOf("") }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->
@@ -790,26 +773,13 @@ fun DialogScope.AddPersonPopup() {
                     })
             }
     }
-    val recipientID = SimpleOutlinedTextField("Contact's User ID")
+    val recipientID = SimpleOutlinedTextField("Contact's FindFamily ID")
 
-    Text("Your contact will also need to enable location sharing within their app by entering ${Networking.userid!!.encodeBase26()}")
+    Text("Share your FindFamily ID with your contact, then enter their ID here")
     OutlinedButton({
         platform.copyToClipboard(Networking.userid!!.encodeBase26())
     }) {
-        Text("Copy Your User ID")
-    }
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Show on Map")
-            Spacer(Modifier.weight(1f))
-            Checkbox(receive, { receive = it })
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Share your location")
-            Spacer(Modifier.weight(1f))
-            Checkbox(send, { send = it })
-        }
+        Text("Copy Your FindFamily ID")
     }
 
     OutlinedButton({
@@ -820,13 +790,12 @@ fun DialogScope.AddPersonPopup() {
                 contactName,
                 contactPhoto,
                 "Unnamed Location",
-                receive,
-                send,
+                true,
+                true,
                 null,
                 null,
             )
             platform.database.usersDao().upsert(newUser)
-            addOrUpdateUserMarker(newUser)
             close()
         }
     }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty()
@@ -838,9 +807,11 @@ fun DialogScope.AddPersonPopup() {
 @Composable
 fun DialogScope.AddPersonPopupTemporary() {
     var expiryTime by remember { mutableStateOf("15 minutes") }
-    Text("Currently, the link cannot be accessed by the recipient. Check back after a future update.")
+
+    Text("Temporary FindFamily Link", style = MaterialTheme.typography.titleLarge)
+
     Spacer(Modifier.height(4.dp))
-    val contactName = SimpleOutlinedTextField("Name")
+    val contactName = SimpleOutlinedTextField("Name this Link")
     Spacer(Modifier.width(16.dp))
     Column {
         var expanded by remember { mutableStateOf(false) }
@@ -889,7 +860,6 @@ fun DialogScope.AddPersonPopupTemporary() {
                 encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
             )
             platform.database.usersDao().upsert(newUser)
-            addOrUpdateUserMarker(newUser)
             close()
         } }, Modifier,contactName().isNotEmpty() && expiryTime.isNotEmpty()) {
         Text("Create Temporary Sharing Link")
