@@ -25,6 +25,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
@@ -287,6 +290,34 @@ fun MapView() {
         }
                         }, topBar = {
         val actions:  @Composable RowScope.() -> Unit = {
+            val obj = selectedObject
+            if(obj is Waypoint && !isEditingWaypoint) {
+                IconButton({
+                    currentWaypointPosition = obj.coord
+                    currentWaypointRadius = obj.range
+                    UISuspendScope {
+                        camera.animateTo(camera.position.copy(target = Position(currentWaypointPosition.lon, currentWaypointPosition.lat)))
+                    }
+                    isEditingWaypoint = true
+                }) {
+                    Icon(Icons.Default.Edit, null)
+                }
+            }
+            if(obj != null) {
+                IconButton({
+                    SuspendScope {
+                        when (obj) {
+                            is User -> usersDao.delete(obj)
+                            is Waypoint -> platform.database.waypointDao().delete(obj)
+                            is BluetoothDevice -> platform.database.bluetoothDeviceDao().delete(obj)
+                        }
+                        objects = objects - obj.id
+                    }
+                    selectedObject = null
+                }) {
+                    Icon(Icons.Default.Delete, null)
+                }
+            }
             var expanded by remember { mutableStateOf(false) }
             IconButton({ expanded = true }) {
                 Icon(Icons.Default.Add, null)
@@ -580,17 +611,6 @@ fun UserSheetContent(user: User) {
             Text("Time remaining: ${remainingTime.inWholeHours} hours, ${remainingTime.inWholeMinutes%60} minutes")
             Spacer(Modifier.height(4.dp))
         }
-        OutlinedButton({
-            SuspendScope {
-                usersDao.delete(user)
-                selectedObject = null
-            }
-        }) {
-            if(user.deleteAt == null)
-                Text("Disconnect")
-            else
-                Text("Break link early")
-        }
     }
 }
 
@@ -627,24 +647,24 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
             return@SimpleOutlinedTextField it
         })
 
-        OutlinedButton(
-            {
-                if (!isEditingWaypoint) {
-                    currentWaypointPosition = waypoint.coord
-                    currentWaypointRadius = waypoint.range
+        if(isEditingWaypoint) {
+            OutlinedButton(
+                {
                     SuspendScope {
-                        camera.animateTo(camera.position.copy(target = Position(currentWaypointPosition.lon, currentWaypointPosition.lat)))
+                        platform.database.waypointDao().upsert(
+                            waypoint.copy(
+                                coord = currentWaypointPosition,
+                                name = waypointNewName(),
+                                range = waypointNewRadius().toDouble()
+                            )
+                        )
                     }
-                } else {
-                    SuspendScope {
-                        platform.database.waypointDao().upsert(waypoint.copy(coord = currentWaypointPosition, name = waypointNewName(), range = waypointNewRadius().toDouble()))
-                    }
-                }
-                isEditingWaypoint = !isEditingWaypoint
-            },
-            enabled = !isEditingWaypoint || (waypointNewName().isNotEmpty() && waypointNewRadius().isPositiveNumber())
-        ) {
-            Text(if (isEditingWaypoint) "Save" else "Edit Name/Location")
+                    isEditingWaypoint = false
+                },
+                enabled = waypointNewName().isNotEmpty() && waypointNewRadius().isPositiveNumber()
+            ) {
+                Text("Save")
+            }
         }
 
         if(!isEditingWaypoint)
@@ -675,15 +695,6 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
                     }
                 }
             }
-
-        OutlinedButton({
-            SuspendScope {
-                platform.database.waypointDao().delete(waypoint)
-                selectedObject = null
-            }
-        }) {
-            Text("Delete Saved Place")
-        }
     }
 }
 
@@ -720,14 +731,6 @@ fun DeviceSheetContent(device: BluetoothDevice) {
         ListItem(
             headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) }
         )
-    }
-    OutlinedButton({
-        SuspendScope {
-            platform.database.bluetoothDeviceDao().delete(device)
-            selectedObject = null
-        }
-    }) {
-        Text("Stop Tracking")
     }
 }
 

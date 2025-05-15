@@ -51,3 +51,8 @@ fun SuspendScope(block: suspend () -> Unit): Job {
         block()
     }
 }
+fun UISuspendScope(block: suspend () -> Unit): Job {
+    return CoroutineScope(Dispatchers.Main).launch {
+        block()
+    }
+}
