@@ -74,52 +74,30 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         // enter or exit waypoints
         val wpIn = waypointsSubset.find { havershine(it.coord, latest.coord) < it.range }
         if(wpIn != null) {
-            val wasInEarlier = havershine(user.lastCoord?:Coord(0.0,0.0), wpIn.coord) < wpIn.range
-            if(!wasInEarlier) {
-                // entered waypoint
-                if(confirmType.getOrPut(user.id){"enter"} != "enter") {
-                    confirmType[user.id] = "enter"
-                    confirmCount[user.id] = 0u
-                }
-                if(confirmCount.getOrPut(user.id){0u} == CONFIRMATIONS_REQUIRED) {
+            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
+            if(newUser.locationName != wpIn.name) {
+                newUser = newUser.copy(locationName = wpIn.name, lastLocationChangeTime = Clock.System.now())
+                if(wasInEarlier != wpIn) {
                     if(user.id != Networking.userid)
                         platform.createNotification(
                             user.name,
-                            "${user.name} entered ${wpIn.name}",
-                            "WAYPOINT_ENTER_EXIT"
+                            "${user.name} has entered ${wpIn.name}",
+                            "ENTER_WAYPOINT"
                         )
-                    confirmCount[user.id] = 0u
-                    newUser = newUser.copy(lastCoord = latest.coord, locationName = wpIn.name, lastLocationChangeTime = Clock.System.now())
-                } else {
-                    confirmCount[user.id] = confirmCount[user.id]!! + 1u
-                    println("WAYPOINT_ENTER: confirmations: " + confirmCount[user.id])
                 }
-            } else {
-                newUser = newUser.copy(lastCoord = latest.coord)
             }
         } else {
             val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
-            if(wasInEarlier != null) {
-                // exited waypoints
-                if(confirmType.getOrPut(user.id){"exit"} != "exit") {
-                    confirmType[user.id] = "exit"
-                    confirmCount[user.id] = 0u
-                }
-                if(confirmCount.getOrPut(user.id){0u} == CONFIRMATIONS_REQUIRED) {
+            if(newUser.locationName != "Unnamed Location") {
+                newUser = newUser.copy(locationName = "Unnamed Location", lastLocationChangeTime = Clock.System.now())
+                if(wasInEarlier != null) {
                     if(user.id != Networking.userid)
                         platform.createNotification(
                             user.name,
-                            "${user.name} left ${wasInEarlier.name}",
-                            "WAYPOINT_ENTER_EXIT"
+                            "${user.name} has left ${user.locationName}",
+                            "EXIT_WAYPOINT"
                         )
-                    confirmCount[user.id] = 0u
-                    newUser = newUser.copy(lastCoord = latest.coord, locationName = "Unnamed Location", lastLocationChangeTime = Clock.System.now())
-                } else {
-                    confirmCount[user.id] = confirmCount[user.id]!! + 1u
-                    println("WAYPOINT_EXIT: confirmations: " + confirmCount[user.id])
                 }
-            } else {
-                newUser = newUser.copy(lastCoord = latest.coord)
             }
         }
         usersDao.upsert(newUser)
