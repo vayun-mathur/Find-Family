@@ -30,7 +30,8 @@ import shared
 					    print("new location")
                         BackgroundServiceKt.onLocationUpdate(arg: loc)
 					}
-					if update.authorizationDenied {
+                    
+                    if update.authorizationDenied {
                         BackgroundServiceKt.problem(arg: "Auth denied")
                     }
                     if update.authorizationDeniedGlobally {
