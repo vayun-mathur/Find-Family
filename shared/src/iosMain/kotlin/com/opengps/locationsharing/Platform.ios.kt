@@ -129,8 +129,8 @@ class IOSPlatform: Platform() {
             ) {
                 val address = didDiscoverPeripheral.identifier.UUIDString
                 val name = didDiscoverPeripheral.name?: return
-                if(!nearBluetoothDevices.any { it.address == address })
-                    nearBluetoothDevices.add(BluetoothDevice(Random.nextULong(), name, address))
+                if(!nearBluetoothDevices.any { it.name == name })
+                    nearBluetoothDevices.add(BluetoothDevice(Random.nextULong(), name))
                 setRSSI(address, RSSI.intValue)
             }
 
