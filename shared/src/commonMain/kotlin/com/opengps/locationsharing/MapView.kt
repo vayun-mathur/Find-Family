@@ -69,8 +69,10 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,6 +98,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -224,6 +227,12 @@ var selectedObject by mutableStateOf<ObjectParent?>(null)
 
 private lateinit var camera: CameraState
 
+private fun DpOffset.toOffset(density: Density): Offset {
+    with(density) {
+        return Offset(x.toPx(), y.toPx())
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapView() {
@@ -240,13 +249,13 @@ fun MapView() {
     }
 
     val usersDao = platform.database.usersDao()
+    val waypointDao = platform.database.waypointDao()
+    val bluetoothDao = platform.database.bluetoothDeviceDao()
 
     var objects by remember {mutableStateOf(mapOf<ULong, ObjectParent>())}
     val waypoints by remember { derivedStateOf { objects.values.filterIsInstance<Waypoint>() } }
     val users by remember { derivedStateOf { objects.values.filterIsInstance<User>() } }
     val devices by remember { derivedStateOf { objects.values.filterIsInstance<BluetoothDevice>() } }
-
-    var longHeldPoint by remember { mutableStateOf(Coord(0.0,0.0)) }
 
     val addPersonPopupEnable = BasicDialog { AddPersonPopup() }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
@@ -254,7 +263,7 @@ fun MapView() {
 
     LaunchedEffect(Unit) {
         SuspendScope {
-            objects = (platform.database.waypointDao().getAll() + usersDao.getAll() + platform.database.bluetoothDeviceDao().getAll()).associateBy { it.id }
+            objects = (waypointDao.getAll() + usersDao.getAll() + bluetoothDao.getAll()).associateBy { it.id }
             while(Networking.userid == null) { delay(500) }
             if(users.isEmpty()) {
                 val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, true, null, null)
@@ -263,7 +272,7 @@ fun MapView() {
             }
 
             while(true) {
-                objects = (platform.database.waypointDao().getAll() + usersDao.getAll() + platform.database.bluetoothDeviceDao().getAll()).associateBy { it.id }
+                objects = (waypointDao.getAll() + usersDao.getAll() + bluetoothDao.getAll()).associateBy { it.id }
                 selectedObject = objects[selectedObject?.id]
                 delay(1000)
             }
@@ -272,32 +281,27 @@ fun MapView() {
 
     LaunchedEffect(selectedObject) {
         val obj = selectedObject
-        if(obj is User && obj.lastLocationValue != null) {
-            camera.animateTo(camera.position.copy(target = Position(obj.lastLocationValue!!.coord.lon, obj.lastLocationValue!!.coord.lat), zoom = max(camera.position.zoom, 14.0)))
-        }
-        if(obj is BluetoothDevice && obj.lastLocationValue != null) {
-            camera.animateTo(camera.position.copy(target = Position(obj.lastLocationValue.coord.lon, obj.lastLocationValue.coord.lat), zoom = max(camera.position.zoom, 14.0)))
-        }
-        if(obj is Waypoint) {
-            camera.animateTo(camera.position.copy(target = Position(obj.coord.lon, obj.coord.lat), zoom = max(camera.position.zoom, 14.0)))
-        }
+        val newZoom = max(camera.position.zoom, 14.0)
+        if(obj is User && obj.lastLocationValue != null)
+            camera.animateTo(camera.position.copy(target = obj.lastLocationValue!!.coord.toPosition(), zoom = newZoom))
+        if(obj is BluetoothDevice && obj.lastLocationValue != null)
+            camera.animateTo(camera.position.copy(target = obj.lastLocationValue.coord.toPosition(), zoom = newZoom))
+        if(obj is Waypoint)
+            camera.animateTo(camera.position.copy(target = obj.coord.toPosition(), zoom = newZoom))
     }
 
     BottomSheetScaffold({
-        Column(Modifier.heightIn(max = 400.dp)) {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
+        Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())) {
                 SheetContent(selectedObject, users, waypoints, devices)
-            }
-        }
-                        }, topBar = {
-        val actions:  @Composable RowScope.() -> Unit = {
+        } }, topBar = {
+        val actions: @Composable RowScope.() -> Unit = {
             val obj = selectedObject
             if(obj is Waypoint && !isEditingWaypoint) {
                 IconButton({
                     currentWaypointPosition = obj.coord
                     currentWaypointRadius = obj.range
                     UISuspendScope {
-                        camera.animateTo(camera.position.copy(target = Position(currentWaypointPosition.lon, currentWaypointPosition.lat)))
+                        camera.animateTo(camera.position.copy(target = currentWaypointPosition.toPosition()))
                     }
                     isEditingWaypoint = true
                 }) {
@@ -309,8 +313,8 @@ fun MapView() {
                     SuspendScope {
                         when (obj) {
                             is User -> usersDao.delete(obj)
-                            is Waypoint -> platform.database.waypointDao().delete(obj)
-                            is BluetoothDevice -> platform.database.bluetoothDeviceDao().delete(obj)
+                            is Waypoint -> waypointDao.delete(obj)
+                            is BluetoothDevice -> bluetoothDao.delete(obj)
                         }
                         objects = objects - obj.id
                     }
@@ -353,42 +357,21 @@ fun MapView() {
 
         Box(Modifier.padding(padding).fillMaxSize()) {
             val density = LocalDensity.current
-            MaplibreMap(styleUri = "https://tiles.openfreemap.org/styles/liberty",
-                gestureSettings = GestureSettings(
-                    isTiltGesturesEnabled = false,
-                    isZoomGesturesEnabled = true,
-                    isRotateGesturesEnabled = false,
-                    isScrollGesturesEnabled = true,
-                ), cameraState = camera,
-                ornamentSettings =
-                OrnamentSettings(
-                    isLogoEnabled = false,
-                    isAttributionEnabled = false,
-                    isCompassEnabled = false,
-                    isScaleBarEnabled = true,
-                    scaleBarAlignment = Alignment.TopStart,
-                ),
-                onMapClick = { position, offset ->
+            MaplibreMap(Modifier, "https://tiles.openfreemap.org/styles/liberty", 0f..20f,
+                0f..60f,
+                GestureSettings(false,true,false,true),
+                OrnamentSettings.AllDisabled, camera,
+                onMapClick = { _, offset ->
                     for (user in users) {
                         if(user.lastLocationValue == null) continue
-                        val center = camera.screenLocationFromPosition(
-                            Position(
-                                user.lastLocationValue!!.coord.lon,
-                                user.lastLocationValue!!.coord.lat
-                            )
-                        )
+                        val center = camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
                         if((center - offset).getDistance() * density.density < 80) {
                             selectedObject = user
                             return@MaplibreMap ClickResult.Pass
                         }
                     }
                     for (waypoint in waypoints) {
-                        val center = camera.screenLocationFromPosition(
-                            Position(
-                                waypoint.coord.lon,
-                                waypoint.coord.lat
-                            )
-                        )
+                        val center = camera.screenLocationFromPosition(waypoint.coord.toPosition())
                         if((center - offset).getDistance() * density.density < 80) {
                             selectedObject = waypoint
                             return@MaplibreMap ClickResult.Pass
@@ -403,46 +386,25 @@ fun MapView() {
                     for (waypoint in waypoints) {
                         val radiusMeters =
                             if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
-                        val (lat, lon) =
+                        val coord =
                             if (waypoint.id == selectedObject?.id) currentWaypointPosition else waypoint.coord
 
-                        val center = camera.screenLocationFromPosition(Position(lon, lat))
+                        val center = camera.screenLocationFromPosition(coord.toPosition())
                         if(center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
                         val circumferenceAtLatitude = 40_075_000 * cos(radians(waypoint.coord.lat))
                         val radiusInDegrees = 360 * radiusMeters / circumferenceAtLatitude
                         val edgePoint = camera.screenLocationFromPosition(
-                            Position(lon + radiusInDegrees, lat))
+                            Position(coord.lon + radiusInDegrees, coord.lat))
                         val radiusPx = abs((center.x - edgePoint.x).toPx())
-                        println(radiusInDegrees)
-                        Circle(
-                            Offset(center.x.toPx(), center.y.toPx()),
-                            Color(0x80Add8e6),
-                            Color(0xffAdd8e6),
-                            radiusPx)
+                        Circle(center.toOffset(this), Color(0x80Add8e6), Color(0xffAdd8e6), radiusPx)
                     }
                     for (user in users) {
                         if(user.lastLocationValue == null) continue
-                        val center = camera.screenLocationFromPosition(
-                            Position(
-                                user.lastLocationValue!!.coord.lon,
-                                user.lastLocationValue!!.coord.lat
-                            )
-                        )
-                        if(center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
+                        val center = camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
+                        if(center !in size.toDpSize()) continue
 
-                        Circle(
-                            Offset(center.x.toPx(), center.y.toPx()),
-                            Color.Green,
-                            primaryColor,
-                            75f
-                        )
-                        CenteredText(
-                            textMeasurer,
-                            "" + user.name[0],
-                            Offset(center.x.toPx(), center.y.toPx()),
-                            color = primaryColor
-                        )
-
+                        Circle(center.toOffset(this), Color.Green, primaryColor, 75f)
+                        CenteredText(textMeasurer, "${user.name[0]}", center.toOffset(this), primaryColor)
                         // todo: show profile photo
                     }
                 }
@@ -454,50 +416,20 @@ fun MapView() {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
                         Card(Modifier.fillMaxWidth(0.5f)) {
                             var percentage by remember { mutableStateOf(1.0) }
-                            Slider(
-                                percentage.toFloat(),
-                                { percentage = it.toDouble() },
-                                Modifier.padding(16.dp)
+                            Slider(percentage.toFloat(), { percentage = it.toDouble() }, Modifier.padding(16.dp))
+                            val oldest = locs.maxOf { it.timestamp }
+                            val range = min(oldest - locs.minOf { it.timestamp }, 1.days.inWholeMilliseconds)
+                            val points = locs.map { it.timestamp to it.coord }
+                            val simulatedTimestamp = (percentage * range).toLong() + oldest
+                            val closest = points.minBy { abs(it.first - simulatedTimestamp) }
+                            LaunchedEffect(closest) {
+                                camera.animateTo(camera.position.copy(target = closest.second.toPosition()))
+                            }
+                            val tstr = timestring(closest.first)
+                            ListItem(
+                                TextP("Showing: ${if (tstr == "just now") "Present" else "Past"}"),
+                                supportingContent = TextP(tstr)
                             )
-                            // interpolate along locations as a percentage based on the timestamp
-                            val latest = locs.maxOf { it.timestamp }
-                            val oldest = max(locs.minOf { it.timestamp }, latest - 1.days.inWholeMilliseconds)
-                            val points = locs.map {
-                                it.timestamp to it.coord
-                            }
-                            val simulatedTimestamp =
-                                (percentage * (latest - oldest)).toLong() + oldest
-                            val simulatedLocationFirst =
-                                points.find { it.first > simulatedTimestamp }
-                            val simulatedLocationSecond =
-                                points.findLast { it.first < simulatedTimestamp }
-                            val simulatedLocation =
-                                if (simulatedLocationFirst != null && simulatedLocationSecond != null) {
-                                    val ratio =
-                                        (simulatedTimestamp - simulatedLocationFirst.first) / (simulatedLocationSecond.first - simulatedLocationFirst.first)
-                                    Coord(
-                                        simulatedLocationFirst.second.lat * (1 - ratio) + simulatedLocationSecond.second.lat * ratio,
-                                        simulatedLocationFirst.second.lon * (1 - ratio) + simulatedLocationSecond.second.lon * ratio
-                                    )
-                                } else if (simulatedLocationFirst != null) {
-                                    simulatedLocationFirst.second
-                                } else if (simulatedLocationSecond != null) {
-                                    simulatedLocationSecond.second
-                                } else {
-                                    null
-                                }
-                            LaunchedEffect(simulatedLocation) {
-                                if(simulatedLocation != null)
-                                    camera.animateTo(camera.position.copy(target = Position(simulatedLocation.lon, simulatedLocation.lat)))
-                            }
-                            if (simulatedLocation != null) {
-                                val (x, y) = doProjection(simulatedLocation)
-                                val tstr = timestring(simulatedTimestamp)
-                                ListItem(
-                                    TextP("Showing: ${if (tstr == "just now") "Present" else "Past"}"),
-                                    supportingContent = TextP(tstr)
-                                )
-                            }
                         }
                     }
                 }
@@ -506,10 +438,18 @@ fun MapView() {
     }
 }
 
+private operator fun DpSize.contains(dpOffset: DpOffset): Boolean {
+    return dpOffset.x in 0.dp..width && dpOffset.y in 0.dp..height
+}
+
 private fun DpOffset.getDistance(): Float {
     return sqrt(x.value * x.value + y.value * y.value)
-
 }
+
+private fun Coord.toPosition() = Position(lon, lat)
+
+
+private fun Position.toCoord() = Coord(latitude, longitude)
 
 @Composable
 fun DialogScope.AddDevicePopup() {
