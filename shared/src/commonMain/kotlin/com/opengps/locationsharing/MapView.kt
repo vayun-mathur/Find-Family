@@ -80,6 +80,7 @@ import dev.sargunv.maplibrecompose.compose.ClickResult
 import dev.sargunv.maplibrecompose.compose.MaplibreMap
 import dev.sargunv.maplibrecompose.compose.rememberCameraState
 import dev.sargunv.maplibrecompose.core.GestureSettings
+import dev.sargunv.maplibrecompose.core.OrnamentSettings
 import dev.whyoleg.cryptography.algorithms.RSA
 import io.github.dellisd.spatialk.geojson.Position
 import io.ktor.util.encodeBase64
@@ -359,6 +360,14 @@ fun MapView() {
                     isRotateGesturesEnabled = false,
                     isScrollGesturesEnabled = true,
                 ), cameraState = camera,
+                ornamentSettings =
+                OrnamentSettings(
+                    isLogoEnabled = false,
+                    isAttributionEnabled = false,
+                    isCompassEnabled = false,
+                    isScaleBarEnabled = true,
+                    scaleBarAlignment = Alignment.TopStart,
+                ),
                 onMapClick = { position, offset ->
                     for (user in users) {
                         if(user.lastLocationValue == null) continue
