@@ -14,7 +14,7 @@ var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 private val confirmCount by mutableStateOf(mutableMapOf<ULong, UInt>())
 private val confirmType by mutableStateOf(mutableMapOf<ULong, String>())
 
-const val SHARE_INTERVAL = 10000L
+const val SHARE_INTERVAL = 3000L
 private const val CONFIRMATIONS_REQUIRED = 10u
 
 private var counter = 100
@@ -46,12 +46,12 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     val recievedLocations = Networking.receiveLocations() ?: listOf()
     val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }
-    println(users.filter{ it.send }.map { it.id })
     for ((key, value) in newLocations) {
         // If the key already exists, add the new list values to the existing list
         locations[key] = (locations[key] ?: mutableListOf()) + value
         platform.database.locationValueDao().upsertAll(value)
     }
+    println(recievedLocations)
     latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
