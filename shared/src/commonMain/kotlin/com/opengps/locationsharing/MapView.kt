@@ -197,7 +197,7 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
             supportingContent = if(showSupportingContent) {
                 {
                     if(user.deleteAt == null)
-                        Text("At ${user.locationName}\nUpdated $lastUpdatedTime\n$sinceString")
+                        Text("Updated $lastUpdatedTime\nAt ${user.locationName}\n$sinceString")
                     else {
                         Button({
                             SuspendScope {
