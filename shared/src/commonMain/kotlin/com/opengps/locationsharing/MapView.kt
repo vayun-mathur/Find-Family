@@ -101,6 +101,7 @@ import ovh.plrapps.mapcompose.ui.MapUI
 import ovh.plrapps.mapcompose.ui.state.MapState
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -181,7 +182,7 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
         }
         "Since $formattedTime $formattedDate"
     }
-    Card(Modifier.clickable(onClick = { selectedObject = user})) {
+    Card(if(showSupportingContent) Modifier.clickable(onClick = { selectedObject = user}) else Modifier) {
         ListItem(
             leadingContent = {
                 if(user.deleteAt == null)
@@ -222,7 +223,8 @@ fun WaypointCard(waypoint: Waypoint, users: List<User>) {
         1 -> " is"
         else -> " are"
     } + " currently here"
-    Card(Modifier.clickable(onClick = { selectedObject = waypoint})) {
+    Card(Modifier.clickable(onClick = { selectedObject = waypoint;
+        isEditingWaypoint = false})) {
         ListItem(
             headlineContent = { Text(waypoint.name, fontWeight = FontWeight.Bold) },
             supportingContent = TextP(usersString)
@@ -262,8 +264,8 @@ fun addWaypointMarker(waypoint: Waypoint) {
     }
 }
 
-var currentWaypointPosition = Pair(0.0,0.0)
-var currentWaypointRadius = 0.0
+var currentWaypointPosition by mutableStateOf(Pair(0.0,0.0))
+var currentWaypointRadius by mutableStateOf(0.0)
 var selectedObject by mutableStateOf<ObjectParent?>(null)
 val selectedId by derivedStateOf { selectedObject?.id }
 
@@ -279,7 +281,6 @@ fun MapView() {
 
     var longHeldPoint by remember { mutableStateOf(Coord(0.0,0.0)) }
 
-    val addWaypointPopupEnable = BasicDialog { AddWaypointPopup(longHeldPoint) }
     val addPersonPopupEnable = BasicDialog { AddPersonPopup() }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
     val addDevicePopupEnable = BasicDialog { AddDevicePopup() }
@@ -318,12 +319,9 @@ fun MapView() {
         state.onTap { _, _ ->
             selectedObject = null
         }
-        state.onLongPress { x, y ->
-            longHeldPoint = doInverseProjection(x, y)
-            addWaypointPopupEnable()
-        }
         state.onMarkerClick { id, x, y ->
             selectedObject = objects[id.toULong()]
+            isEditingWaypoint = false
         }
     }
 
@@ -357,7 +355,16 @@ fun MapView() {
                 DropdownMenuItem(TextP("Create Shareable Link"),
                     { addTemporaryPersonPopupEnable(); expanded = false })
                 DropdownMenuItem(TextP("Add Saved Location"),
-                    { longHeldPoint = doInverseProjection(state.centroidX, state.centroidY); addWaypointPopupEnable(); expanded = false })
+                    { longHeldPoint = doInverseProjection(state.centroidX, state.centroidY);
+                        val newWaypoint = Waypoint(Random.nextULong(), "New Saved Place", 100.0, longHeldPoint, mutableListOf())
+                        objects = objects + (newWaypoint.id to newWaypoint)
+                        SuspendScope {
+                            platform.database.waypointDao().upsert(newWaypoint)
+                        }
+                        addWaypointMarker(newWaypoint)
+                        selectedObject = newWaypoint
+                        isEditingWaypoint = true
+                        expanded = false })
 //                DropdownMenuItem(TextP("Add Bluetooth Device"),
 //                    { addDevicePopupEnable(); expanded = false })
             }
@@ -598,15 +605,17 @@ fun UserSheetContent(user: User) {
     }
 }
 
+var isEditingWaypoint by mutableStateOf(false)
+
 @Composable
 fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
-    var isEditing by remember { mutableStateOf(false) }
 
     LaunchedEffect(waypoint) {
         currentWaypointPosition = doProjection(waypoint.coord)
+        currentWaypointRadius = waypoint.range
     }
     LaunchedEffect(state.centroidY, state.centroidX) {
-        if(isEditing) {
+        if(isEditingWaypoint) {
             state.moveMarker(waypoint.id.toString(), state.centroidX, state.centroidY)
             currentWaypointPosition = Pair(state.centroidX, state.centroidY)
         }
@@ -617,16 +626,21 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val waypointNewName = SimpleOutlinedTextField("Saved Place Name", readOnly = !isEditing)
-        val waypointNewRadius = SimpleOutlinedTextField("Saved Place Range (Radius)", initial = waypoint.range.toString(), suffix = {Text("meters")}, readOnly = !isEditing, onChange = {
+        val waypointNewName = SimpleOutlinedTextField("Saved Place Name", readOnly = !isEditingWaypoint, initial = waypoint.name)
+        val waypointNewRadius = SimpleOutlinedTextField("Saved Place Range (Radius)", initial = waypoint.range.toString(), suffix = {Text("meters")}, readOnly = !isEditingWaypoint, onChange = {
             if(it.isPositiveNumber()) {
-                currentWaypointRadius = it.toDouble()
+                if(it.toDouble() > 1000) {
+                    currentWaypointRadius = 1000.0
+                    return@SimpleOutlinedTextField "1000.0"
+                } else
+                    currentWaypointRadius = it.toDouble()
             }
+            return@SimpleOutlinedTextField it
         })
 
         OutlinedButton(
             {
-                if (!isEditing) {
+                if (!isEditingWaypoint) {
                     currentWaypointPosition = doProjection(waypoint.coord)
                     currentWaypointRadius = waypoint.range
                     SuspendScope {
@@ -641,14 +655,14 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
                         platform.database.waypointDao().upsert(waypoint.copy(coord = coord, name = waypointNewName(), range = waypointNewRadius().toDouble()))
                     }
                 }
-                isEditing = !isEditing
+                isEditingWaypoint = !isEditingWaypoint
             },
-            enabled = !isEditing || (waypointNewName().isNotEmpty() && waypointNewRadius().isPositiveNumber())
+            enabled = !isEditingWaypoint || (waypointNewName().isNotEmpty() && waypointNewRadius().isPositiveNumber())
         ) {
-            Text(if (isEditing) "Save" else "Edit Name/Location")
+            Text(if (isEditingWaypoint) "Save" else "Edit Name/Location")
         }
 
-        if(!isEditing)
+        if(!isEditingWaypoint)
             Card() {
                 Column(Modifier.fillMaxWidth(0.8f)) {
                     Spacer(Modifier.height(8.dp))
@@ -770,7 +784,7 @@ fun DialogScope.AddPersonPopup() {
                     },
                     headlineContent = {
                         Text(
-                            "Select Contact",
+                            "Tap to Select Contact",
                             fontWeight = FontWeight.Bold
                         )
                     })
@@ -883,26 +897,10 @@ fun DialogScope.AddPersonPopupTemporary() {
 }
 
 @Composable
-fun SimpleOutlinedTextField(label: String, initial: String = "", suffix: @Composable (() -> Unit)? = null, readOnly: Boolean = false, onChange: (String) -> Unit = {}): ()->String {
+fun SimpleOutlinedTextField(label: String, initial: String = "", suffix: @Composable (() -> Unit)? = null, readOnly: Boolean = false, onChange: (String) -> String? = {null}): ()->String {
     var text by remember { mutableStateOf(initial) }
-    OutlinedTextField(text, { text = it; onChange(it) }, label = { Text(label) }, suffix = suffix, readOnly = readOnly)
+    OutlinedTextField(text, { text = it; text = onChange(it)?:text }, label = { Text(label) }, suffix = suffix, readOnly = readOnly)
     return { text }
-}
-
-@Composable
-fun DialogScope.AddWaypointPopup(coord: Coord) {
-    Text("Add Saved Location", style = MaterialTheme.typography.headlineMedium)
-    val waypointName = SimpleOutlinedTextField("Saved Place Name")
-    val waypointRadius = SimpleOutlinedTextField("Saved Place Range (Radius)", suffix = { Text("meters") })
-    OutlinedButton(
-        {
-            SuspendScope {
-                platform.database.waypointDao().upsert(Waypoint(Random.nextULong(), waypointName(), waypointRadius().toDouble(), coord, mutableListOf()))
-            }
-            close()
-        }, Modifier, waypointName().isNotEmpty() && waypointRadius().isPositiveNumber()) {
-        Text("Add Location")
-    }
 }
 
 @Composable
