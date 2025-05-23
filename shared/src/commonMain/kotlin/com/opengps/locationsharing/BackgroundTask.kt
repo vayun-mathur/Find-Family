@@ -22,8 +22,8 @@ private var counter = 100
 private suspend fun locationBackend(locationValue: LocationValue) {
     println("updated location")
     if(locations.isEmpty()) {
-        platform.database.locationValueDao().clearBefore((Clock.System.now() - 1.days).toEpochMilliseconds())
-        locations = platform.database.locationValueDao().getSince((Clock.System.now() - 1.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
+        platform.database.locationValueDao().clearBefore((Clock.System.now() - 4.days).toEpochMilliseconds())
+        locations = platform.database.locationValueDao().getSince((Clock.System.now() - 2.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
     }
 
     val usersDao = platform.database.usersDao()
