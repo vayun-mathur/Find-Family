@@ -27,7 +27,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
@@ -143,9 +142,6 @@ operator fun Offset.minus(intSize: IntSize): Offset {
 
 @Composable
 fun UserCard(user: User, showSupportingContent: Boolean) {
-    if(user.lastLocationValue?.sleep?:false) {
-        println(user.name + " is sleeping")
-    }
     val lastUpdatedTime = user.lastLocationValue?.let { if(it.sleep) "Just now" else timestring(it.timestamp) } ?: "Never"
     val speed = user.lastLocationValue?.speed?.times(10)?.roundToInt()?.div(10F) ?: 0.0
     val sinceTime = user.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
@@ -216,7 +212,7 @@ fun WaypointCard(waypoint: Waypoint, users: List<User>) {
         1 -> " is"
         else -> " are"
     } + " currently here"
-    Card(Modifier.clickable(onClick = { selectedObject = waypoint;
+    Card(Modifier.clickable(onClick = { selectedObject = waypoint
         isEditingWaypoint = false})) {
         ListItem(
             headlineContent = { Text(waypoint.name, fontWeight = FontWeight.Bold) },
@@ -436,16 +432,17 @@ fun MapView() {
                         Card(Modifier.fillMaxWidth(0.5f)) {
                             var percentage by remember { mutableStateOf(1.0) }
                             Slider(percentage.toFloat(), { percentage = it.toDouble() }, Modifier.padding(16.dp))
-                            val newest = locs.maxOf { it.timestamp }
+                            val newest = Clock.System.now().toEpochMilliseconds()
                             val range = min(newest - locs.minOf { it.timestamp }, 1.days.inWholeMilliseconds)
                             println(range)
                             val points = locs.map { it.timestamp to it.coord }
                             val simulatedTimestamp = newest - ((1-percentage) * range).toLong()
                             val closest = points.minBy { abs(it.first - simulatedTimestamp) }
                             LaunchedEffect(closest) {
-                                camera.animateTo(camera.position.copy(target = closest.second.toPosition()))
+                                val newZoom = max(camera.position.zoom, 14.0)
+                                camera.animateTo(camera.position.copy(target = closest.second.toPosition(), zoom = newZoom))
                             }
-                            val tstr = timestring(closest.first)
+                            val tstr = timestring(simulatedTimestamp)
                             ListItem(
                                 TextP("Showing: ${if (tstr == "just now") "Present" else "Past"}"),
                                 supportingContent = TextP(tstr)
