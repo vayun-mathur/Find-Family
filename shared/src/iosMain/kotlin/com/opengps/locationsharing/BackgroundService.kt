@@ -16,13 +16,13 @@ fun BackgroundService() {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-fun onLocationUpdate(arg: CLLocation) {
+fun onLocationUpdate(arg: CLLocation, sleep: Boolean) {
     val coords = arg.coordinate.useContents {
         Coord(this.latitude, this.longitude)
     }
-    if(Clock.System.now().toEpochMilliseconds() - last_time > SHARE_INTERVAL) {
+    if(Clock.System.now().toEpochMilliseconds() - last_time > SHARE_INTERVAL || sleep) {
         last_time = Clock.System.now().toEpochMilliseconds()
-        SuspendScope { backgroundTask(coords, arg.speed.toFloat()) }
+        SuspendScope { backgroundTask(coords, arg.speed.toFloat(), sleep) }
     }
 }
 

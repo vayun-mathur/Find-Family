@@ -32,7 +32,8 @@ data class LocationValue(
     val speed: Float,
     val acc: Float,
     val timestamp: Long,
-    val battery: Float)
+    val battery: Float,
+    val sleep: Boolean = false)
 
 @Entity
 @Serializable
@@ -96,7 +97,7 @@ interface LocationValueDao {
     suspend fun getAll(): List<LocationValue>
     @Query("SELECT * FROM LocationValue WHERE timestamp > :timestamp")
     suspend fun getSince(timestamp: Long): List<LocationValue>
-    @Query("DELETE FROM LocationValue WHERE timestamp > :timestamp")
+    @Query("DELETE FROM LocationValue WHERE timestamp < :timestamp")
     suspend fun clearBefore(timestamp: Long)
     @Upsert
     suspend fun upsert(locationValue: LocationValue)
@@ -130,7 +131,7 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 6)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 7)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

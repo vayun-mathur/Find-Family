@@ -123,8 +123,8 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 }
 
 // will be called every SHARE_INTERVAL
-suspend fun backgroundTask(location: Coord, speed: Float) {
+suspend fun backgroundTask(location: Coord, speed: Float, sleep: Boolean = false) {
     if(Networking.userid == null) return
-    val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel)
+    val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel, sleep)
     locationBackend(locationValue)
 }

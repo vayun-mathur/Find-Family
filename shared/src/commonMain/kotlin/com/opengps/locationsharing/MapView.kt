@@ -51,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -142,7 +143,10 @@ operator fun Offset.minus(intSize: IntSize): Offset {
 
 @Composable
 fun UserCard(user: User, showSupportingContent: Boolean) {
-    val lastUpdatedTime = user.lastLocationValue?.timestamp?.let { timestring(it) } ?: "Never"
+    if(user.lastLocationValue?.sleep?:false) {
+        println(user.name + " is sleeping")
+    }
+    val lastUpdatedTime = user.lastLocationValue?.let { if(it.sleep) "Just now" else timestring(it.timestamp) } ?: "Never"
     val speed = user.lastLocationValue?.speed?.times(10)?.roundToInt()?.div(10F) ?: 0.0
     val sinceTime = user.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
     val timeSinceEntry = Clock.System.now() - user.lastLocationChangeTime
@@ -381,31 +385,46 @@ fun MapView() {
                 }
             )
             val textMeasurer = rememberTextMeasurer()
-            Canvas(Modifier.fillMaxSize()) {
-                if(initialized) {
-                    for (waypoint in waypoints) {
-                        val radiusMeters =
-                            if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
-                        val coord =
-                            if (waypoint.id == selectedObject?.id) currentWaypointPosition else waypoint.coord
+            key(camera.position) {
+                Canvas(Modifier.fillMaxSize()) {
+                    if (initialized) {
+                        for (waypoint in waypoints) {
+                            val radiusMeters =
+                                if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
+                            val coord =
+                                if (waypoint.id == selectedObject?.id) currentWaypointPosition else waypoint.coord
 
-                        val center = camera.screenLocationFromPosition(coord.toPosition())
-                        if(center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
-                        val circumferenceAtLatitude = 40_075_000 * cos(radians(waypoint.coord.lat))
-                        val radiusInDegrees = 360 * radiusMeters / circumferenceAtLatitude
-                        val edgePoint = camera.screenLocationFromPosition(
-                            Position(coord.lon + radiusInDegrees, coord.lat))
-                        val radiusPx = abs((center.x - edgePoint.x).toPx())
-                        Circle(center.toOffset(this), Color(0x80Add8e6), Color(0xffAdd8e6), radiusPx)
-                    }
-                    for (user in users) {
-                        if(user.lastLocationValue == null) continue
-                        val center = camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
-                        if(center !in size.toDpSize()) continue
+                            val center = camera.screenLocationFromPosition(coord.toPosition())
+                            if (center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
+                            val circumferenceAtLatitude =
+                                40_075_000 * cos(radians(waypoint.coord.lat))
+                            val radiusInDegrees = 360 * radiusMeters / circumferenceAtLatitude
+                            val edgePoint = camera.screenLocationFromPosition(
+                                Position(coord.lon + radiusInDegrees, coord.lat)
+                            )
+                            val radiusPx = abs((center.x - edgePoint.x).toPx())
+                            Circle(
+                                center.toOffset(this),
+                                Color(0x80Add8e6),
+                                Color(0xffAdd8e6),
+                                radiusPx
+                            )
+                        }
+                        for (user in users) {
+                            if (user.lastLocationValue == null) continue
+                            val center =
+                                camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
+                            if (center !in size.toDpSize()) continue
 
-                        Circle(center.toOffset(this), Color.Green, primaryColor, 75f)
-                        CenteredText(textMeasurer, "${user.name[0]}", center.toOffset(this), primaryColor)
-                        // todo: show profile photo
+                            Circle(center.toOffset(this), Color.Green, primaryColor, 75f)
+                            CenteredText(
+                                textMeasurer,
+                                "${user.name[0]}",
+                                center.toOffset(this),
+                                primaryColor
+                            )
+                            // todo: show profile photo
+                        }
                     }
                 }
             }
@@ -417,10 +436,11 @@ fun MapView() {
                         Card(Modifier.fillMaxWidth(0.5f)) {
                             var percentage by remember { mutableStateOf(1.0) }
                             Slider(percentage.toFloat(), { percentage = it.toDouble() }, Modifier.padding(16.dp))
-                            val oldest = locs.maxOf { it.timestamp }
-                            val range = min(oldest - locs.minOf { it.timestamp }, 1.days.inWholeMilliseconds)
+                            val newest = locs.maxOf { it.timestamp }
+                            val range = min(newest - locs.minOf { it.timestamp }, 1.days.inWholeMilliseconds)
+                            println(range)
                             val points = locs.map { it.timestamp to it.coord }
-                            val simulatedTimestamp = (percentage * range).toLong() + oldest
+                            val simulatedTimestamp = newest - ((1-percentage) * range).toLong()
                             val closest = points.minBy { abs(it.first - simulatedTimestamp) }
                             LaunchedEffect(closest) {
                                 camera.animateTo(camera.position.copy(target = closest.second.toPosition()))

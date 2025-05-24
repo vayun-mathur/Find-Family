@@ -20,46 +20,47 @@ import shared
 			self.manager.requestWhenInUseAuthorization()
 		}
 		print("📍 [App] Starting location updates")
+        self.session = CLServiceSession(authorization: CLServiceSession.AuthorizationRequirement.always)
 		Task {
 			do {
-				self.background = CLBackgroundActivitySession()
-				self.session = CLServiceSession(authorization: CLServiceSession.AuthorizationRequirement.always)
 				let updates = CLLocationUpdate.liveUpdates()
 				for try await update in updates {
 					if let loc = update.location {
-                        BackgroundServiceKt.onLocationUpdate(arg: loc)
+                        BackgroundServiceKt.onLocationUpdate(arg: loc, sleep: (update.stationary || update.insufficientlyInUse))
 					}
-                    
-                    if update.authorizationDenied {
-                        BackgroundServiceKt.problem(arg: "Auth denied")
-                    }
-                    if update.authorizationDeniedGlobally {
-                        BackgroundServiceKt.problem(arg: "Auth denied globally")
-                    }
-                    if update.authorizationRequestInProgress {
-                        BackgroundServiceKt.problem(arg: "Auth in progress")
-                    }
-                    if update.authorizationRestricted {
-                        BackgroundServiceKt.problem(arg: "Auth restricted")
-                    }
-                    if update.insufficientlyInUse {
-                        BackgroundServiceKt.problem(arg: "Insufficient Use")
-                    }
-                    if update.locationUnavailable {
-                        BackgroundServiceKt.problem(arg: "Location Unavailable")
-                    }
-                    if update.serviceSessionRequired {
-                        BackgroundServiceKt.problem(arg: "Service Session required")
-                    }
-                    if update.stationary {
-                        BackgroundServiceKt.problem(arg: "Stationary")
-                    }
+//                    print(update.location == nil)
+//                    
+//                    if update.authorizationDenied {
+//                        BackgroundServiceKt.problem(arg: "Auth denied")
+//                    }
+//                    if update.authorizationDeniedGlobally {
+//                        BackgroundServiceKt.problem(arg: "Auth denied globally")
+//                    }
+//                    if update.authorizationRequestInProgress {
+//                        BackgroundServiceKt.problem(arg: "Auth in progress")
+//                    }
+//                    if update.authorizationRestricted {
+//                        BackgroundServiceKt.problem(arg: "Auth restricted")
+//                    }
+//                    if update.insufficientlyInUse {
+//                        BackgroundServiceKt.problem(arg: "Insufficient Use")
+//                    }
+//                    if update.locationUnavailable {
+//                        BackgroundServiceKt.problem(arg: "Location Unavailable")
+//                    }
+//                    if update.serviceSessionRequired {
+//                        BackgroundServiceKt.problem(arg: "Service Session required")
+//                    }
+//                    if update.stationary {
+//                        BackgroundServiceKt.problem(arg: "Stationary")
+//                    }
 				}
 			} catch {
 				print("💥 [App] Could not start location updates")
 			}
 			return
 		}
+        self.background = CLBackgroundActivitySession()
 	}
 
 	func stopLocationUpdates() {
