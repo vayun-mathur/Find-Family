@@ -27,7 +27,6 @@ import shared
 				let updates = CLLocationUpdate.liveUpdates()
 				for try await update in updates {
 					if let loc = update.location {
-					    print("new location")
                         BackgroundServiceKt.onLocationUpdate(arg: loc)
 					}
                     

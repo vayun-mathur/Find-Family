@@ -51,7 +51,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         locations[key] = (locations[key] ?: mutableListOf()) + value
         platform.database.locationValueDao().upsertAll(value)
     }
-    println(recievedLocations)
+    //println(recievedLocations)
     latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
@@ -82,7 +82,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                         platform.createNotification(
                             user.name,
                             "${user.name} has entered ${wpIn.name}",
-                            "ENTER_WAYPOINT"
+                            "WAYPOINT_ENTER_EXIT"
                         )
                 }
             }
@@ -95,7 +95,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                         platform.createNotification(
                             user.name,
                             "${user.name} has left ${user.locationName}",
-                            "EXIT_WAYPOINT"
+                            "WAYPOINT_ENTER_EXIT"
                         )
                 }
             }

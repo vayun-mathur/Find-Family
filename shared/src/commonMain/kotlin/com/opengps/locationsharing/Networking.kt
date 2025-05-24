@@ -80,6 +80,7 @@ class Networking {
         }
 
         suspend fun problem(arg: String) {
+            @Serializable
             data class Problem(val problem: String)
             checkNetworkDown {
                 client.post("${getUrl()}/api/problem") {
