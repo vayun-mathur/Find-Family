@@ -95,6 +95,9 @@ import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.toLocalDateTime
+import location_sharing.shared.generated.resources.Res
+import location_sharing.shared.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
@@ -327,14 +330,15 @@ fun MapView() {
             IconButton({ expanded = true }) {
                 Icon(Icons.Default.Add, null)
             }
+            val new_saved_place_string = stringResource(Res.string.new_saved_place)
             DropdownMenu(expanded, { expanded = false }) {
-                DropdownMenuItem(TextP("Add Person"),
+                DropdownMenuItem(TextP(stringResource(Res.string.add_person)),
                     { addPersonPopupEnable(); expanded = false })
-                DropdownMenuItem(TextP("Create Shareable Link"),
+                DropdownMenuItem(TextP(stringResource(Res.string.create_sharable_link)),
                     { addTemporaryPersonPopupEnable(); expanded = false })
-                DropdownMenuItem(TextP("Add Saved Location"),
+                DropdownMenuItem(TextP(stringResource(Res.string.add_saved_location)),
                     {
-                        val newWaypoint = Waypoint(Random.nextULong(), "New Saved Place", 100.0, Coord(camera.position.target.latitude, camera.position.target.longitude), mutableListOf())
+                        val newWaypoint = Waypoint(Random.nextULong(), new_saved_place_string, 100.0, Coord(camera.position.target.latitude, camera.position.target.longitude), mutableListOf())
                         objects = objects + (newWaypoint.id to newWaypoint)
                         SuspendScope {
                             platform.database.waypointDao().upsert(newWaypoint)
@@ -352,7 +356,7 @@ fun MapView() {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                 }
         }
-        TopAppBar(TextP(selectedObject?.name ?: "Location Sharing"), Modifier, navIcon, actions)
+        TopAppBar(TextP(selectedObject?.name ?: "Find Family"), Modifier, navIcon, actions)
     }, sheetPeekHeight = 200.dp) { padding ->
 
         Box(Modifier.padding(padding).fillMaxSize()) {
@@ -444,7 +448,7 @@ fun MapView() {
                             }
                             val tstr = timestring(simulatedTimestamp)
                             ListItem(
-                                TextP("Showing: ${if (tstr == "just now") "Present" else "Past"}"),
+                                TextP("${stringResource(Res.string.showing)} ${if (tstr == "just now") stringResource(Res.string.present) else stringResource(Res.string.past)}"),
                                 supportingContent = TextP(tstr)
                             )
                         }
@@ -478,8 +482,8 @@ fun DialogScope.AddDevicePopup() {
         }
     }
     Column {
-        Text("Connect a Bluetooth Device", style = MaterialTheme.typography.titleLarge)
-        Text("Devices need to be paired to your phone before they appear here", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(Res.string.connect_bluetooth_device), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(Res.string.connect_bluetooth_device_description), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.padding(8.dp))
         bluetoothDevices.forEach { bluetoothDevice ->
             ListItem(
@@ -542,7 +546,7 @@ fun UserSheetContent(user: User) {
             Card {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Show on Map")
+                        Text(stringResource(Res.string.show_on_map))
                         Spacer(Modifier.weight(1f))
                         Checkbox(
                             user.receive,
@@ -554,7 +558,7 @@ fun UserSheetContent(user: User) {
                     }
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Share your location")
+                        Text(stringResource(Res.string.share_your_location))
                         Spacer(Modifier.weight(1f))
                         Checkbox(
                             user.send,
@@ -570,11 +574,11 @@ fun UserSheetContent(user: User) {
             OutlinedButton({
                 requestPickContact1()
             }) {
-                Text("Change connected contact")
+                Text(stringResource(Res.string.change_connected_contact))
             }
         } else {
             val remainingTime = user.deleteAt!! - Clock.System.now()
-            Text("Time remaining: ${remainingTime.inWholeHours} hours, ${remainingTime.inWholeMinutes%60} minutes")
+            Text("${stringResource(Res.string.time_remaining)} ${remainingTime.inWholeHours} ${stringResource(Res.string.hours)}, ${remainingTime.inWholeMinutes%60}  ${stringResource(Res.string.minutes)}")
             Spacer(Modifier.height(4.dp))
         }
     }
@@ -601,8 +605,8 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val waypointNewName = SimpleOutlinedTextField("Saved Place Name", readOnly = !isEditingWaypoint, initial = waypoint.name)
-        val waypointNewRadius = SimpleOutlinedTextField("Saved Place Range (Radius)", initial = waypoint.range.toString(), suffix = {Text("meters")}, readOnly = !isEditingWaypoint, onChange = {
+        val waypointNewName = SimpleOutlinedTextField(stringResource(Res.string.saved_place_name), readOnly = !isEditingWaypoint, initial = waypoint.name)
+        val waypointNewRadius = SimpleOutlinedTextField(stringResource(Res.string.saved_place_range), initial = waypoint.range.toString(), suffix = {Text("meters")}, readOnly = !isEditingWaypoint, onChange = {
             if(it.isPositiveNumber()) {
                 if(it.toDouble() > 1000) {
                     currentWaypointRadius = 1000.0
@@ -629,7 +633,7 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
                 },
                 enabled = waypointNewName().isNotEmpty() && waypointNewRadius().isPositiveNumber()
             ) {
-                Text("Save")
+                Text(stringResource(Res.string.save))
             }
         }
 
@@ -637,7 +641,7 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
             Card() {
                 Column(Modifier.fillMaxWidth(0.8f)) {
                     Spacer(Modifier.height(8.dp))
-                    Text("Saved Place Entry/Exit Notifications:", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.saved_place_notification), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     users.forEach { user ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -736,20 +740,22 @@ fun DialogScope.AddPersonPopup() {
                     },
                     headlineContent = {
                         Text(
-                            "Tap to Select Contact",
+                            stringResource(Res.string.tap_pick_contact),
                             fontWeight = FontWeight.Bold
                         )
                     })
             }
     }
-    val recipientID = SimpleOutlinedTextField("Contact's FindFamily ID")
+    val recipientID = SimpleOutlinedTextField(stringResource(Res.string.contact_findfamily_id))
 
-    Text("Share your FindFamily ID with your contact, then enter their ID here")
+    Text(stringResource(Res.string.contact_findfamily_id_desc))
     OutlinedButton({
         platform.copyToClipboard(Networking.userid!!.encodeBase26())
     }) {
-        Text("Copy Your FindFamily ID")
+        Text(stringResource(Res.string.copy_findfamily_id))
     }
+
+    val unnamed_str = stringResource(Res.string.unnamed_location)
 
     OutlinedButton({
         SuspendScope {
@@ -758,7 +764,7 @@ fun DialogScope.AddPersonPopup() {
                 trueID,
                 contactName,
                 contactPhoto,
-                "Unnamed Location",
+                unnamed_str,
                 true,
                 true,
                 null,
@@ -769,22 +775,27 @@ fun DialogScope.AddPersonPopup() {
         }
     }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty()
     ) {
-        Text("Start Location Sharing")
+        Text(stringResource(Res.string.start_sharing))
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DialogScope.AddPersonPopupTemporary() {
-    var expiryTime by remember { mutableStateOf("15 minutes") }
+    val minutes_str = stringResource(Res.string.minutes)
+    val hour_str = stringResource(Res.string.hour)
+    val hours_str = stringResource(Res.string.hours)
+    var expiryTime by remember { mutableStateOf("15 $minutes_str") }
 
-    Text("Temporary FindFamily Link", style = MaterialTheme.typography.titleLarge)
+    Text(stringResource(Res.string.temporary_link_title), style = MaterialTheme.typography.titleLarge)
 
     Spacer(Modifier.height(4.dp))
-    val contactName = SimpleOutlinedTextField("Name this Link")
+    val contactName = SimpleOutlinedTextField(stringResource(Res.string.temporary_link_name))
     Spacer(Modifier.width(16.dp))
     Column {
         var expanded by remember { mutableStateOf(false) }
-        OutlinedTextField(expiryTime, {}, Modifier.clickable { expanded = true }, readOnly = true, enabled = false, label = TextP("Link Expiry in"),
+        OutlinedTextField(expiryTime, {}, Modifier.clickable { expanded = true }, readOnly = true, enabled = false, label = TextP(
+            stringResource(Res.string.temporary_link_expiry)
+        ),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(
                     expanded = expanded
@@ -800,7 +811,7 @@ fun DialogScope.AddPersonPopupTemporary() {
                 disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant)
         )
         DropdownMenu(expanded, { expanded = false }) {
-            listOf("15 minutes", "30 minutes", "1 hour", "2 hours", "6 hours", "12 hours", "1 day").forEach { selectionOption ->
+            listOf("15 $minutes_str", "30 $minutes_str", "1 $hour_str", "2 $hours_str", "6 $hours_str", "12 $hours_str", "24 $hours_str").forEach { selectionOption ->
                 DropdownMenuItem(TextP(text = selectionOption), {
                     expiryTime = selectionOption
                     expanded = false
@@ -817,13 +828,13 @@ fun DialogScope.AddPersonPopupTemporary() {
                 keypair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM).encodeBase64(),
                 false, true, null, null,
                 deleteAt = Clock.System.now() + when (expiryTime) {
-                        "15 minutes" -> 15.minutes
-                        "30 minutes" -> 30.minutes
-                        "1 hour" -> 1.hours
-                        "2 hours" -> 2.hours
-                        "6 hours" -> 6.hours
-                        "12 hours" -> 12.hours
-                        "1 day" -> 1.days
+                        "15 $minutes_str" -> 15.minutes
+                        "30 $minutes_str" -> 30.minutes
+                        "1 $hour_str" -> 1.hours
+                        "2 $hours_str" -> 2.hours
+                        "6 $hours_str" -> 6.hours
+                        "12 $hours_str" -> 12.hours
+                        "24  $hours_str" -> 1.days
                         else -> throw IllegalStateException("Invalid expiry time for location sharing")
                     },
                 encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
@@ -831,7 +842,7 @@ fun DialogScope.AddPersonPopupTemporary() {
             platform.database.usersDao().upsert(newUser)
             close()
         } }, Modifier,contactName().isNotEmpty() && expiryTime.isNotEmpty()) {
-        Text("Create Temporary Sharing Link")
+        Text(stringResource(Res.string.temporary_link_submit))
     }
 }
 

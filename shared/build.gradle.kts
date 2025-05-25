@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -38,6 +37,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(compose.components.resources)
             implementation(libs.runtime.service.ui)
             implementation(libs.resource.noexec.tor)
             implementation(libs.runtime)

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_person">Add Person</string>
+    <string name="create_sharable_link">Create Sharable Link</string>
+    <string name="add_saved_location">Add Saved Location</string>
+    <string name="new_saved_place">New Saved Place</string>
+    <string name="showing">Showing:</string>
+    <string name="present">Present</string>
+    <string name="past">Past</string>
+    <string name="connect_bluetooth_device">Connect a Bluetooth Device</string>
+    <string name="connect_bluetooth_device_description">Devices need to be paired to your phone before they appear here</string>
+    <string name="show_on_map">Show on Map</string>
+    <string name="share_your_location">Share your location</string>
+    <string name="change_connected_contact">Change connected contact</string>
+    <string name="time_remaining">Time remaining</string>
+    <string name="hour">hour</string>
+    <string name="hours">hours</string>
+    <string name="minutes">minutes</string>
+    <string name="saved_place_name">Saved Place Name</string>
+    <string name="saved_place_range">Saved Place Range (Radius)</string>
+    <string name="save">Save</string>
+    <string name="saved_place_notification">Saved Place Entry/Exit Notifications</string>
+    <string name="tap_pick_contact">Tap to Select a Contact</string>
+    <string name="contact_findfamily_id">Contact's FindFamily ID</string>
+    <string name="contact_findfamily_id_desc">Share your FindFamily ID with your contact, then enter their ID here</string>
+    <string name="copy_findfamily_id">Copy Your FindFamily ID</string>
+    <string name="unnamed_location">Unnamed Location</string>
+    <string name="start_sharing">Start Location Sharing</string>
+    <string name="temporary_link_title">Temporary FindFamily Link</string>
+    <string name="temporary_link_name">Name this Link</string>
+    <string name="temporary_link_expiry">Link Expiry in</string>
+    <string name="temporary_link_submit">Create Temporary Sharing Link</string>
+</resources>
