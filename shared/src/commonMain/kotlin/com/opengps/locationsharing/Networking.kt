@@ -17,7 +17,6 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
-import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
@@ -50,13 +49,12 @@ class Networking {
             platform.dataStoreUtils.setByteArray("publicKey", publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM), true)
             platform.dataStoreUtils.setLong("userid", Random.nextLong(), true)
 
-            delay(100)
             publickey = crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, platform.dataStoreUtils.getByteArray("publicKey")!!)
             privatekey = crypto.privateKeyDecoder(SHA512).decodeFromByteArray(RSA.PrivateKey.Format.PEM, platform.dataStoreUtils.getByteArray("privateKey")!!)
             userid = platform.dataStoreUtils.getLong("userid")!!.toULong()
         }
 
-        suspend fun <T> checkNetworkDown(try_connect: suspend ()->T?): T? {
+        private suspend fun <T> checkNetworkDown(try_connect: suspend ()->T?): T? {
             try {
                 val x = try_connect()
                 network_is_down = false

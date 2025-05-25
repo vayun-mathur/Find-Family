@@ -8,13 +8,9 @@ import android.app.Service
 import android.content.Intent
 import android.location.LocationManager
 import android.os.IBinder
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class BackgroundLocationService : Service() {
 
@@ -45,24 +41,11 @@ class BackgroundLocationService : Service() {
         serviceJob = SuspendScope {
             while(platformInternal == null)
                 platformInternal = AndroidPlatform(this@BackgroundLocationService)
-            CoroutineScope(Dispatchers.Main).launch {
-                Toast.makeText(
-                    this@BackgroundLocationService,
-                    "Making connection",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
             //TODO: eventually re-enable tor
             //runtime.startDaemonAsync()
-            CoroutineScope(Dispatchers.Main).launch {
-                Toast.makeText(
-                    this@BackgroundLocationService,
-                    "Connected to server!",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
             Networking.init()
             updateNotification("started")
+            var availability = true
             while(true) {
                 val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 if(location != null) {
@@ -73,6 +56,16 @@ class BackgroundLocationService : Service() {
                         ),
                         location.speed
                     )
+                    if(!availability) {
+                        updateNotification("location available")
+                        availability = true
+                    }
+                } else {
+                    println("Location unavailable")
+                    if(availability) {
+                        updateNotification("location unavailable")
+                        availability = false
+                    }
                 }
                 delay(SHARE_INTERVAL)
             }
