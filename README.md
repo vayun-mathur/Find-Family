@@ -31,3 +31,10 @@ This app can be installed on iOS by opening this project in Xcode. The iOS versi
 
 ### Todo:
 - Connect through Tor hidden service
+
+# Contributing
+
+In general, I am open to contributions. However, I want to avoid too much bloat with this project, so please open an issue and ask if a feature is in scope before coding it out.
+
+## Translations
+The project currently doesn't meet the "Established projects" criteria for Weblate's free hosting. When we are able to, I will set that up.
