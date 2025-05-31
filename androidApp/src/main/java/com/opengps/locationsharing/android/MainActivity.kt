@@ -26,8 +26,15 @@ class MainActivity : ComponentActivity() {
             "Waypoint Enter/Leave",
             NotificationManager.IMPORTANCE_HIGH
         )
+
+        val serviceChannel2 = NotificationChannel(
+            "SHARING_REQUEST",
+            "Location Sharing Request",
+            NotificationManager.IMPORTANCE_HIGH
+        )
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(serviceChannel)
+        manager.createNotificationChannel(serviceChannel2)
 
         if(platformInternal == null)
             platformInternal = com.opengps.locationsharing.AndroidPlatform(this)

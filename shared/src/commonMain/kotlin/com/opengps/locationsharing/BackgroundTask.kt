@@ -25,6 +25,7 @@ suspend fun checkSharingRequests() {
         User(it.decodeBase26(), it, null, "", false, RequestStatus.AWAITING_REQUEST, null, null)
     }.forEach {
         platform.database.usersDao().upsert(it)
+        platform.createNotification("Your Location Requested", "by ${it.id.encodeBase26()}", channelId = "SHARING_REQUEST")
     }
 }
 
