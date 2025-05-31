@@ -2,7 +2,19 @@
 
 Find Family is a simple, end-to-end encrypted location sharing app for family and friends.
 
-### Features:
+## Installing
+
+### Android
+
+[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/cc.findfamily.app)
+
+APKs are also available for manual download with each release on this repository
+
+### iOS
+
+This app can be installed on iOS by opening this project in Xcode. The iOS version is fully functional, and will be uploaded to the App Store soon
+
+## Features:
 - End-to-end encryption
 - No emails, phone numbers, or any other personal information required
 - Temporarily turn on or off location sharing with specific people
@@ -19,3 +31,10 @@ Find Family is a simple, end-to-end encrypted location sharing app for family an
 
 ### Todo:
 - Connect through Tor hidden service
+
+# Contributing
+
+In general, I am open to contributions. However, I want to avoid too much bloat with this project, so please open an issue and ask if a feature is in scope before coding it out.
+
+## Translations
+The project currently doesn't meet the "Established projects" criteria for Weblate's free hosting. When we are able to, I will set that up. In the meantime, see [this issue](https://github.com/vayun-mathur/Find-Family/issues/2) for instructions on how to contribute translations in code.
