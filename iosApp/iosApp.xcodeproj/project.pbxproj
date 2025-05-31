@@ -105,6 +105,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				AF498B122DE8242B00403B3B /* PBXTargetDependency */,
 			);
 			name = iosApp;
 			productName = iosApp;
@@ -190,6 +191,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AF498B122DE8242B00403B3B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = AF498B112DE8242B00403B3B /* MapLibre */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7555FFA3242A565B00829871 /* Debug */ = {
@@ -338,11 +346,15 @@
 					"-framework",
 					shared,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = cc.findfamily.ios.app74389247;
+				PRODUCT_BUNDLE_IDENTIFIER = cc.findfamily.ios.app;
 				PRODUCT_NAME = "Find Family";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -374,11 +386,15 @@
 					"-framework",
 					shared,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = cc.findfamily.ios.app74389247;
+				PRODUCT_BUNDLE_IDENTIFIER = cc.findfamily.ios.app;
 				PRODUCT_NAME = "Find Family";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -417,6 +433,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AF498B112DE8242B00403B3B /* MapLibre */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFAC1BD02DE18F0C00E9F8F4 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;
+			productName = MapLibre;
+		};
 		AFAC1BD12DE18F0C00E9F8F4 /* MapLibre */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AFAC1BD02DE18F0C00E9F8F4 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;

@@ -257,7 +257,7 @@ fun MapView() {
     val users by remember { derivedStateOf { objects.values.filterIsInstance<User>() } }
     val devices by remember { derivedStateOf { objects.values.filterIsInstance<BluetoothDevice>() } }
 
-    val addPersonPopupEnable = BasicDialog { AddPersonPopup() }
+    val addPersonPopupEnable = BasicDialog { AddPersonPopup(users.map { it.id }) }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
     val addDevicePopupEnable = BasicDialog { AddDevicePopup() }
 
@@ -701,7 +701,7 @@ fun DeviceSheetContent(device: BluetoothDevice) {
 }
 
 @Composable
-fun DialogScope.AddPersonPopup() {
+fun DialogScope.AddPersonPopup(userids: List<ULong>) {
     var contactName by remember { mutableStateOf("") }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->
@@ -742,7 +742,7 @@ fun DialogScope.AddPersonPopup() {
                     })
             }
     }
-    val recipientID = SimpleOutlinedTextField("Contact's FindFamily ID")
+    val recipientID = SimpleOutlinedTextField("Contact's FindFamily ID", isError = { it.decodeBase26() in userids }, errorText = {if(it.decodeBase26() == Networking.userid) "Cannot share your location with yourself" else "Already sharing with this person"})
 
     Text("Share your FindFamily ID with your contact, then enter their ID here")
     OutlinedButton({
@@ -767,7 +767,7 @@ fun DialogScope.AddPersonPopup() {
             platform.database.usersDao().upsert(newUser)
             close()
         }
-    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty()
+    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty() && recipientID().decodeBase26() !in userids
     ) {
         Text("Start Location Sharing")
     }
@@ -836,9 +836,9 @@ fun DialogScope.AddPersonPopupTemporary() {
 }
 
 @Composable
-fun SimpleOutlinedTextField(label: String, initial: String = "", suffix: @Composable (() -> Unit)? = null, readOnly: Boolean = false, onChange: (String) -> String? = {null}): ()->String {
+fun SimpleOutlinedTextField(label: String, initial: String = "", suffix: @Composable (() -> Unit)? = null, readOnly: Boolean = false, onChange: (String) -> String? = {null}, isError: (String) -> Boolean = {false}, errorText: (String) -> String = {""}): ()->String {
     var text by remember { mutableStateOf(initial) }
-    OutlinedTextField(text, { text = it; text = onChange(it)?:text }, label = { Text(label) }, suffix = suffix, readOnly = readOnly)
+    OutlinedTextField(text, { text = it; text = onChange(it)?:text }, label = { Text(label) }, suffix = suffix, readOnly = readOnly, isError = isError(text), supportingText = {if(isError(text)) Text(errorText(text))})
     return { text }
 }
 
