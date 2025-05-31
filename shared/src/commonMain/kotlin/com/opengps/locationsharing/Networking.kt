@@ -156,6 +156,28 @@ class Networking {
             }
         }
 
+        suspend fun sendLocationRequest(requested: ULong): Boolean {
+            return checkNetworkDown {
+                val response = client.post("${getUrl()}/api/request_sharing/request") {
+                    contentType(ContentType.Application.Json)
+                    setBody("{\"requester\": \"${userid!!.encodeBase26()}\", \"requested\": \"${requested.encodeBase26()}\"}")
+                }
+                if(response.status != HttpStatusCode.OK) return@checkNetworkDown false;
+                return@checkNetworkDown true
+            } ?: false
+        }
+
+        suspend fun retrieveRequestsOfMe(): List<String> {
+            return checkNetworkDown {
+                val response = client.post("${getUrl()}/api/request_sharing/retrieve") {
+                    contentType(ContentType.Application.Json)
+                    setBody("{\"requested\": \"${userid!!.encodeBase26()}\"}")
+                }
+                if(response.status != HttpStatusCode.OK) return@checkNetworkDown listOf();
+                return@checkNetworkDown response.body<List<String>>()
+            } ?: listOf()
+        }
+
         private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: RSA.OAEP.PublicKey): LocationSharingData {
             val cipher = key.encryptor()
             val str = Json.encodeToString(location)

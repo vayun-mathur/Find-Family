@@ -44,6 +44,13 @@ data class BluetoothDevice(
     val lastLocationValue: LocationValue? = null,
 ): ObjectParent
 
+@Serializable
+enum class RequestStatus {
+    MUTUAL_CONNECTION,
+    AWAITING_REQUEST,
+    AWAITING_RESPONSE
+}
+
 @Entity
 @Serializable
 data class User(
@@ -52,6 +59,7 @@ data class User(
     val photo: String?,
     var locationName: String,
     var send: Boolean,
+    var requestStatus: RequestStatus,
     var lastBatteryLevel: Float?,
     var lastCoord: Coord?,
     var lastLocationChangeTime: Instant = Clock.System.now(),
@@ -84,6 +92,8 @@ interface WaypointDao {
 interface UsersDao {
     @Query("SELECT * FROM User")
     suspend fun getAll(): List<User>
+    @Query("SELECT * FROM User WHERE id = :id")
+    suspend fun getByID(id: ULong): User?
     @Upsert
     suspend fun upsert(user: User)
     @Delete
@@ -130,7 +140,7 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 8)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 9)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

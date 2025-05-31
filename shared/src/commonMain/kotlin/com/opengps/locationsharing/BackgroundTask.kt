@@ -19,12 +19,23 @@ private const val CONFIRMATIONS_REQUIRED = 10u
 
 private var counter = 100
 
+suspend fun checkSharingRequests() {
+    // retrieve requests
+    Networking.retrieveRequestsOfMe().map {
+        User(it.decodeBase26(), it, null, "", false, RequestStatus.AWAITING_REQUEST, null, null)
+    }.forEach {
+        platform.database.usersDao().upsert(it)
+    }
+}
+
 private suspend fun locationBackend(locationValue: LocationValue) {
     println("updated location")
     if(locations.isEmpty()) {
         platform.database.locationValueDao().clearBefore((Clock.System.now() - 4.days).toEpochMilliseconds())
         locations = platform.database.locationValueDao().getSince((Clock.System.now() - 2.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
     }
+
+    checkSharingRequests()
 
     val usersDao = platform.database.usersDao()
     var users = usersDao.getAll()
@@ -52,11 +63,14 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         locations[key] = (locations[key] ?: mutableListOf()) + value
         platform.database.locationValueDao().upsertAll(value)
     }
-    //println(recievedLocations)
+    users = usersDao.getAll()
     latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
     for (user in users) {
         val latest = latestLocations[user.id] ?: continue
         var newUser = user.copy(lastLocationValue = latest)
+        if(newUser.requestStatus == RequestStatus.AWAITING_RESPONSE) {
+            newUser = newUser.copy(requestStatus = RequestStatus.MUTUAL_CONNECTION)
+        }
 
         // battery level
         if(latest.battery <= 15f && (user.lastBatteryLevel?:100f) > 15f) {

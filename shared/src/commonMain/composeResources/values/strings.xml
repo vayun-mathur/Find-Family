@@ -25,7 +25,8 @@
     <string name="contact_findfamily_id_desc">Share your FindFamily ID with your contact, then enter their ID here</string>
     <string name="copy_findfamily_id">Copy Your FindFamily ID</string>
     <string name="unnamed_location">Unnamed Location</string>
-    <string name="start_sharing">Start Location Sharing</string>
+    <string name="request_start_sharing">Request Location Sharing</string>
+    <string name="accept_start_sharing">Start Location Sharing</string>
     <string name="temporary_link_title">Temporary FindFamily Link</string>
     <string name="temporary_link_name">Name this Link</string>
     <string name="temporary_link_expiry">Link Expiry in</string>
