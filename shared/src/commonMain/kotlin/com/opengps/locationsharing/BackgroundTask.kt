@@ -45,7 +45,8 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
     val recievedLocations = Networking.receiveLocations() ?: listOf()
-    val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id}?.receive?:false }.mapValues { it.value.sortedBy { it.timestamp } }
+
+    val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id} != null }.mapValues { it.value.sortedBy { it.timestamp } }
     for ((key, value) in newLocations) {
         // If the key already exists, add the new list values to the existing list
         locations[key] = (locations[key] ?: mutableListOf()) + value

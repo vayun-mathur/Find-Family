@@ -51,7 +51,6 @@ data class User(
     override val name: String,
     val photo: String?,
     var locationName: String,
-    var receive: Boolean,
     var send: Boolean,
     var lastBatteryLevel: Float?,
     var lastCoord: Coord?,
@@ -131,7 +130,7 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 7)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 8)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

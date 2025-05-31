@@ -269,7 +269,7 @@ fun MapView() {
             objects = (waypointDao.getAll() + usersDao.getAll() + bluetoothDao.getAll()).associateBy { it.id }
             while(Networking.userid == null) { delay(500) }
             if(users.isEmpty()) {
-                val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, true, null, null)
+                val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, null, null)
                 usersDao.upsert(newUser)
                 objects = objects + (newUser.id to newUser)
             }
@@ -544,30 +544,16 @@ fun UserSheetContent(user: User) {
     ) {
         if(user.deleteAt == null) {
             Card {
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(Res.string.show_on_map))
-                        Spacer(Modifier.weight(1f))
-                        Checkbox(
-                            user.receive,
-                            { recieve ->
-                                SuspendScope {
-                                    usersDao.upsert(user.copy(receive = recieve))
-                                }
-                            })
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(Res.string.share_your_location))
-                        Spacer(Modifier.weight(1f))
-                        Checkbox(
-                            user.send,
-                            { send ->
-                                SuspendScope {
-                                    usersDao.upsert(user.copy(send = send))
-                                }
-                            })
-                    }
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(Res.string.share_your_location))
+                    Spacer(Modifier.weight(1f))
+                    Checkbox(
+                        user.send,
+                        { send ->
+                            SuspendScope {
+                                usersDao.upsert(user.copy(send = send))
+                            }
+                        })
                 }
             }
             Spacer(Modifier.height(4.dp))
@@ -721,7 +707,6 @@ fun DialogScope.AddPersonPopup(userids: List<ULong>) {
                     contactPhoto,
                     "",
                     false,
-                    false,
                     null,
                     null
                 ), false
@@ -765,7 +750,6 @@ fun DialogScope.AddPersonPopup(userids: List<ULong>) {
                 contactName,
                 contactPhoto,
                 unnamed_str,
-                true,
                 true,
                 null,
                 null,
@@ -826,7 +810,7 @@ fun DialogScope.AddPersonPopupTemporary() {
 
             val newUser = User(Random.nextULong(), contactName(), null,
                 keypair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM).encodeBase64(),
-                false, true, null, null,
+                false, null, null,
                 deleteAt = Clock.System.now() + when (expiryTime) {
                         "15 $minutes_str" -> 15.minutes
                         "30 $minutes_str" -> 30.minutes
