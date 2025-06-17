@@ -65,6 +65,11 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.maplibre.compose)
 
+            implementation("io.github.vinceglb:filekit-core:0.10.0-beta04")
+            implementation("io.github.vinceglb:filekit-dialogs:0.10.0-beta04")
+            implementation("io.github.vinceglb:filekit-dialogs-compose:0.10.0-beta04")
+            implementation("io.github.vinceglb:filekit-coil:0.10.0-beta04")
+
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

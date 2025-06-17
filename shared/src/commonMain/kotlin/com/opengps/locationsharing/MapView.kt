@@ -26,7 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
@@ -85,6 +87,9 @@ import dev.sargunv.maplibrecompose.core.GestureSettings
 import dev.sargunv.maplibrecompose.core.OrnamentSettings
 import dev.whyoleg.cryptography.algorithms.RSA
 import io.github.dellisd.spatialk.geojson.Position
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -351,6 +356,26 @@ fun MapView() {
                         expanded = false })
 //                DropdownMenuItem(TextP("Add Bluetooth Device"),
 //                    { addDevicePopupEnable(); expanded = false })
+            }
+            IconButton({
+                SuspendScope {
+                    val file = FileKit.openFileSaver(suggestedName = "findfamily_backup", extension = "db")
+                    file?.let {
+                        Backup.downloadBackupFile(it)
+                    }
+                }
+            }) {
+                Icon(Icons.Default.Download, null);
+            }
+            IconButton({
+                SuspendScope {
+                    val file = FileKit.openFilePicker()
+                    file?.let {
+                        Backup.restoreBackupFile(it)
+                    }
+                }
+            }) {
+                Icon(Icons.Default.Upload, null);
             }
         }
         val navIcon = @Composable {

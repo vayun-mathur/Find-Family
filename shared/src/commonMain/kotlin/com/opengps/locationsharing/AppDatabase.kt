@@ -6,10 +6,12 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Entity
+import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.room.Transaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
@@ -86,6 +88,15 @@ interface WaypointDao {
     suspend fun upsert(wp: Waypoint)
     @Delete
     suspend fun delete(waypoint: Waypoint)
+    @Query("DELETE FROM Waypoint")
+    suspend fun clear()
+    @Insert
+    suspend fun insertAll(waypoints: List<Waypoint>)
+    @Transaction
+    suspend fun setAll(waypoints: List<Waypoint>) {
+        clear()
+        insertAll(waypoints);
+    }
 }
 
 @Dao
@@ -98,6 +109,15 @@ interface UsersDao {
     suspend fun upsert(user: User)
     @Delete
     suspend fun delete(user: User)
+    @Query("DELETE FROM User")
+    suspend fun clear()
+    @Insert
+    suspend fun insertAll(users: List<User>)
+    @Transaction
+    suspend fun setAll(users: List<User>) {
+        clear()
+        insertAll(users);
+    }
 }
 
 @Dao

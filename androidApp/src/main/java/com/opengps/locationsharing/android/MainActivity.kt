@@ -14,6 +14,8 @@ import com.opengps.locationsharing.Main
 import com.opengps.locationsharing.Networking
 import com.opengps.locationsharing.platform
 import com.opengps.locationsharing.platformInternal
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.init
 
 
 class MainActivity : ComponentActivity() {
@@ -38,6 +40,8 @@ class MainActivity : ComponentActivity() {
 
         if(platformInternal == null)
             platformInternal = com.opengps.locationsharing.AndroidPlatform(this)
+
+        FileKit.init(this);
 
         setContent {
 
