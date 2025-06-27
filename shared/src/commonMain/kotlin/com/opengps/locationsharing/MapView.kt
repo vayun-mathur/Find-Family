@@ -236,7 +236,7 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
                     else {
                         Button({
                             SuspendScope {
-                                platform.copyToClipboard("https://findfamily.cc/view/${user.id}/${user.locationName}")
+                                platform.copyToClipboard("https://findfamily.cc/view/${user.id}#key=${user.locationName}")
                             }
                         }) {
                             Text("Copy link")
