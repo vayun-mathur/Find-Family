@@ -4,18 +4,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.ExperimentalTime
 
 var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 
-private val confirmCount by mutableStateOf(mutableMapOf<ULong, UInt>())
-private val confirmType by mutableStateOf(mutableMapOf<ULong, String>())
-
 const val SHARE_INTERVAL = 3000L
-private const val CONFIRMATIONS_REQUIRED = 10u
 
 private var counter = 100
 
@@ -138,9 +137,13 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 //    }
 }
 
+private var lastCalled = Instant.fromEpochMilliseconds(0)
+
 // will be called every SHARE_INTERVAL
 suspend fun backgroundTask(location: Coord, speed: Float, sleep: Boolean = false) {
     if(Networking.userid == null) return
+    if(Clock.System.now() - lastCalled < SHARE_INTERVAL.milliseconds*0.8) return
+    lastCalled = Clock.System.now()
     val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel, sleep)
     locationBackend(locationValue)
 }
