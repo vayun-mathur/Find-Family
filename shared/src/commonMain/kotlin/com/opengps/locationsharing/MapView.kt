@@ -324,7 +324,7 @@ fun MapView() {
                     Icon(Icons.Default.Edit, null)
                 }
             }
-            if(obj != null) {
+            if(obj != null && obj.id != Networking.userid) {
                 IconButton({
                     SuspendScope {
                         when (obj) {
