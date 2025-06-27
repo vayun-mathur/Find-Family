@@ -52,7 +52,6 @@ class MainActivity : ComponentActivity() {
             }
             val launcherBT = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
             LaunchedEffect(Unit) {
-                Networking.init()
                 launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 launcherBT.launch(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT))
             }

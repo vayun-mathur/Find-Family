@@ -43,6 +43,9 @@ class Networking {
             private set
 
         suspend fun init() {
+            if(platform.dataStoreUtils.getLong("userid") == null) {
+                return
+            }
             val platform = platform
             val (privateKey, publicKey) = crypto.keyPairGenerator(digest = SHA512).generateKey().let { Pair(it.privateKey, it.publicKey) }
             platform.dataStoreUtils.setByteArray("privateKey", privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM), true)
@@ -88,11 +91,11 @@ class Networking {
             }
         }
 
-        private suspend fun register() {
+        private suspend fun register(): Boolean {
             @Serializable
             data class Register(val userid: ULong, val key: String)
-            checkNetworkDown {
-                client.post("${getUrl()}/api/register") {
+            return checkNetworkDown {
+                val response = client.post("${getUrl()}/api/register") {
                     contentType(ContentType.Application.Json)
                     setBody(
                         Register(
@@ -102,7 +105,9 @@ class Networking {
                         )
                     )
                 }
-            }
+                val result = response.body<Boolean>()
+                return@checkNetworkDown result
+            } ?: false
         }
 
         suspend fun ensureUserExists() {

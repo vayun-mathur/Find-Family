@@ -121,12 +121,17 @@ fun TextP(text: String) = @Composable {Text(text)}
 
 @Composable
 fun UserPicture(user: User, size: Dp) {
+    UserPicture(user.photo, user.name.first(), size);
+}
+
+@Composable
+fun UserPicture(userPhoto: String?, firstChar: Char, size: Dp) {
     val modifier = Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-    if(user.photo != null)
-        AsyncImage(user.photo, null, modifier, contentScale = ContentScale.FillWidth)
+    if(userPhoto != null)
+        AsyncImage(userPhoto, null, modifier, contentScale = ContentScale.FillWidth)
     else {
         Box(modifier.background(Color.Green)) {
-            Text(user.name.first().toString(), Modifier.align(Alignment.Center), color = Color.White)
+            Text(firstChar.toString(), Modifier.align(Alignment.Center), color = Color.White)
         }
     }
 }
@@ -466,7 +471,6 @@ fun MapView() {
                             Slider(percentage.toFloat(), { percentage = it.toDouble() }, Modifier.padding(16.dp))
                             val newest = Clock.System.now().toEpochMilliseconds()
                             val range = min(newest - locs.minOf { it.timestamp }, 1.days.inWholeMilliseconds)
-                            println(range)
                             val points = locs.map { it.timestamp to it.coord }
                             val simulatedTimestamp = newest - ((1-percentage) * range).toLong()
                             val closest = points.minBy { abs(it.first - simulatedTimestamp) }
