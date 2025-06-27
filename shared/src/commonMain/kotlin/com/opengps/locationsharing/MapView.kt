@@ -32,8 +32,12 @@ import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.CalendarLocale
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +52,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -93,15 +98,48 @@ import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
 import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import location_sharing.shared.generated.resources.Res
-import location_sharing.shared.generated.resources.*
+import location_sharing.shared.generated.resources.accept_start_sharing
+import location_sharing.shared.generated.resources.add_person
+import location_sharing.shared.generated.resources.add_saved_location
+import location_sharing.shared.generated.resources.change_connected_contact
+import location_sharing.shared.generated.resources.connect_bluetooth_device
+import location_sharing.shared.generated.resources.connect_bluetooth_device_description
+import location_sharing.shared.generated.resources.contact_findfamily_id
+import location_sharing.shared.generated.resources.contact_findfamily_id_desc
+import location_sharing.shared.generated.resources.copy_findfamily_id
+import location_sharing.shared.generated.resources.create_sharable_link
+import location_sharing.shared.generated.resources.hour
+import location_sharing.shared.generated.resources.hours
+import location_sharing.shared.generated.resources.minutes
+import location_sharing.shared.generated.resources.new_saved_place
+import location_sharing.shared.generated.resources.past
+import location_sharing.shared.generated.resources.present
+import location_sharing.shared.generated.resources.request_start_sharing
+import location_sharing.shared.generated.resources.save
+import location_sharing.shared.generated.resources.saved_place_name
+import location_sharing.shared.generated.resources.saved_place_notification
+import location_sharing.shared.generated.resources.saved_place_range
+import location_sharing.shared.generated.resources.share_your_location
+import location_sharing.shared.generated.resources.showing
+import location_sharing.shared.generated.resources.tap_pick_contact
+import location_sharing.shared.generated.resources.temporary_link_expiry
+import location_sharing.shared.generated.resources.temporary_link_name
+import location_sharing.shared.generated.resources.temporary_link_submit
+import location_sharing.shared.generated.resources.temporary_link_title
+import location_sharing.shared.generated.resources.time_remaining
+import location_sharing.shared.generated.resources.unnamed_location
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.cos
@@ -467,22 +505,85 @@ fun MapView() {
                 locations[obj.id]?.let { locs ->
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
                         Card(Modifier.fillMaxWidth(0.5f)) {
-                            var percentage by remember { mutableStateOf(1.0) }
-                            Slider(percentage.toFloat(), { percentage = it.toDouble() }, Modifier.padding(16.dp))
-                            val newest = Clock.System.now().toEpochMilliseconds()
-                            val range = min(newest - locs.minOf { it.timestamp }, 1.days.inWholeMilliseconds)
-                            val points = locs.map { it.timestamp to it.coord }
-                            val simulatedTimestamp = newest - ((1-percentage) * range).toLong()
-                            val closest = points.minBy { abs(it.first - simulatedTimestamp) }
-                            LaunchedEffect(closest) {
-                                val newZoom = max(camera.position.zoom, 14.0)
-                                camera.animateTo(camera.position.copy(target = closest.second.toPosition(), zoom = newZoom))
+                            var isShowingPresent by remember { mutableStateOf(true) }
+                            Box(Modifier.padding(8.dp)) {
+                                OutlinedButton({
+                                    isShowingPresent = !isShowingPresent
+                                }, Modifier.fillMaxWidth()) {
+                                    Text(if (isShowingPresent) "Show History" else "Show Present")
+                                }
                             }
-                            val tstr = timestring(simulatedTimestamp)
-                            ListItem(
-                                TextP("${stringResource(Res.string.showing)} ${if (tstr == "just now") stringResource(Res.string.present) else stringResource(Res.string.past)}"),
-                                supportingContent = TextP(tstr)
-                            )
+                            if (!isShowingPresent) {
+                                var pickedDate by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds())}
+                                val pickedLocalDate = Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date
+                                var showDialog by remember { mutableStateOf(false) }
+                                OutlinedButton({
+                                    // open date picker
+                                    showDialog = true
+                                }) {
+                                    val datestring = LocalDate.Format {
+                                        monthNumber()
+                                        chars("/")
+                                        dayOfMonth()
+                                        chars("/")
+                                        year()
+                                    }.format(pickedLocalDate)
+                                    Text(datestring)
+                                }
+                                if(showDialog) {
+                                    val datePickerState = rememberDatePickerState(pickedDate)
+                                    DatePickerDialog(
+                                        onDismissRequest = {showDialog = false},
+                                        dismissButton = {
+                                            Button({showDialog = false}) {
+                                                Text("Cancel")
+                                            }
+                                        },
+                                        confirmButton = {
+                                            Button({
+                                                showDialog = false
+                                                datePickerState.selectedDateMillis?.let {
+                                                    pickedDate = it
+                                                }
+                                            }) {
+                                                Text("Select Date")
+                                            }
+                                        },
+                                    ) {
+                                        DatePicker(datePickerState)
+                                    }
+                                }
+                                var secondOfDay by remember { mutableStateOf(0.0) }
+                                Slider(
+                                    secondOfDay.toFloat(),
+                                    { secondOfDay = it.toDouble() },
+                                    Modifier.padding(16.dp),
+                                    valueRange = 0f..(3600*24f-1)
+                                )
+                                val time = LocalTime.fromSecondOfDay(secondOfDay.toInt())
+                                val simulatedTimestamp = pickedLocalDate.atTime(time).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+
+                                val points = locs.map { it.timestamp to it.coord }
+                                val closest =
+                                    points.minBy { abs(it.first - simulatedTimestamp) }
+                                LaunchedEffect(closest) {
+                                    val newZoom = max(camera.position.zoom, 14.0)
+                                    camera.animateTo(
+                                        camera.position.copy(
+                                            target = closest.second.toPosition(),
+                                            zoom = newZoom
+                                        )
+                                    )
+                                }
+                                ListItem(TextP(LocalTime.Format {
+                                    amPmHour()
+                                    chars(":")
+                                    minute()
+                                    chars(" ")
+                                    amPmMarker("am", "pm")
+                                }.format(time)))
+
+                            }
                         }
                     }
                 }
