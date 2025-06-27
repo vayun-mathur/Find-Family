@@ -32,11 +32,9 @@ import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
-import androidx.compose.material3.CalendarLocale
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -124,15 +122,12 @@ import location_sharing.shared.generated.resources.hour
 import location_sharing.shared.generated.resources.hours
 import location_sharing.shared.generated.resources.minutes
 import location_sharing.shared.generated.resources.new_saved_place
-import location_sharing.shared.generated.resources.past
-import location_sharing.shared.generated.resources.present
 import location_sharing.shared.generated.resources.request_start_sharing
 import location_sharing.shared.generated.resources.save
 import location_sharing.shared.generated.resources.saved_place_name
 import location_sharing.shared.generated.resources.saved_place_notification
 import location_sharing.shared.generated.resources.saved_place_range
 import location_sharing.shared.generated.resources.share_your_location
-import location_sharing.shared.generated.resources.showing
 import location_sharing.shared.generated.resources.tap_pick_contact
 import location_sharing.shared.generated.resources.temporary_link_expiry
 import location_sharing.shared.generated.resources.temporary_link_name
@@ -144,7 +139,6 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -159,7 +153,7 @@ fun TextP(text: String) = @Composable {Text(text)}
 
 @Composable
 fun UserPicture(user: User, size: Dp) {
-    UserPicture(user.photo, user.name.first(), size);
+    UserPicture(user.photo, user.name.first(), size)
 }
 
 @Composable
@@ -284,7 +278,7 @@ private fun DpOffset.toOffset(density: Density): Offset {
     }
 }
 
-var addPersonPopupEnable: () -> Unit = {};
+var addPersonPopupEnable: () -> Unit = {}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -333,7 +327,7 @@ fun MapView() {
         }
     }
 
-    LaunchedEffect(selectedObject) {
+    LaunchedEffect(selectedObject?.id) {
         val obj = selectedObject
         val newZoom = max(camera.position.zoom, 14.0)
         if(obj is User && obj.lastLocationValue != null)
@@ -408,7 +402,7 @@ fun MapView() {
                     }
                 }
             }) {
-                Icon(Icons.Default.Download, null);
+                Icon(Icons.Default.Download, null)
             }
             IconButton({
                 SuspendScope {
@@ -418,7 +412,7 @@ fun MapView() {
                     }
                 }
             }) {
-                Icon(Icons.Default.Upload, null);
+                Icon(Icons.Default.Upload, null)
             }
         }
         val navIcon = @Composable {
@@ -502,71 +496,76 @@ fun MapView() {
 
             val obj = selectedObject
             if(obj is User || obj is BluetoothDevice) {
-                locations[obj.id]?.let { locs ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-                        Card(Modifier.fillMaxWidth(0.5f)) {
-                            var isShowingPresent by remember { mutableStateOf(true) }
-                            Box(Modifier.padding(8.dp)) {
-                                OutlinedButton({
-                                    isShowingPresent = !isShowingPresent
-                                }, Modifier.fillMaxWidth()) {
-                                    Text(if (isShowingPresent) "Show History" else "Show Present")
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+                    Card(Modifier.fillMaxWidth(0.5f)) {
+                        var isShowingPresent by remember { mutableStateOf(true) }
+                        Box(Modifier.padding(8.dp)) {
+                            OutlinedButton({
+                                isShowingPresent = !isShowingPresent
+                            }, Modifier.fillMaxWidth()) {
+                                Text(if (isShowingPresent) "Show History" else "Show Present")
+                            }
+                        }
+                        if (!isShowingPresent) {
+                            var pickedDate by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds())}
+                            val pickedLocalDate = Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date
+                            var showDialog by remember { mutableStateOf(false) }
+                            OutlinedButton({
+                                // open date picker
+                                showDialog = true
+                            }) {
+                                val datestring = LocalDate.Format {
+                                    monthNumber()
+                                    chars("/")
+                                    dayOfMonth()
+                                    chars("/")
+                                    year()
+                                }.format(pickedLocalDate)
+                                Text(datestring)
+                            }
+                            if(showDialog) {
+                                val datePickerState = rememberDatePickerState(pickedDate)
+                                DatePickerDialog(
+                                    onDismissRequest = {showDialog = false},
+                                    dismissButton = {
+                                        Button({showDialog = false}) {
+                                            Text("Cancel")
+                                        }
+                                    },
+                                    confirmButton = {
+                                        Button({
+                                            showDialog = false
+                                            datePickerState.selectedDateMillis?.let {
+                                                pickedDate = it
+                                            }
+                                        }) {
+                                            Text("Select Date")
+                                        }
+                                    },
+                                ) {
+                                    DatePicker(datePickerState)
                                 }
                             }
-                            if (!isShowingPresent) {
-                                var pickedDate by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds())}
-                                val pickedLocalDate = Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date
-                                var showDialog by remember { mutableStateOf(false) }
-                                OutlinedButton({
-                                    // open date picker
-                                    showDialog = true
-                                }) {
-                                    val datestring = LocalDate.Format {
-                                        monthNumber()
-                                        chars("/")
-                                        dayOfMonth()
-                                        chars("/")
-                                        year()
-                                    }.format(pickedLocalDate)
-                                    Text(datestring)
-                                }
-                                if(showDialog) {
-                                    val datePickerState = rememberDatePickerState(pickedDate)
-                                    DatePickerDialog(
-                                        onDismissRequest = {showDialog = false},
-                                        dismissButton = {
-                                            Button({showDialog = false}) {
-                                                Text("Cancel")
-                                            }
-                                        },
-                                        confirmButton = {
-                                            Button({
-                                                showDialog = false
-                                                datePickerState.selectedDateMillis?.let {
-                                                    pickedDate = it
-                                                }
-                                            }) {
-                                                Text("Select Date")
-                                            }
-                                        },
-                                    ) {
-                                        DatePicker(datePickerState)
-                                    }
-                                }
-                                var secondOfDay by remember { mutableStateOf(0.0) }
-                                Slider(
-                                    secondOfDay.toFloat(),
-                                    { secondOfDay = it.toDouble() },
-                                    Modifier.padding(16.dp),
-                                    valueRange = 0f..(3600*24f-1)
-                                )
-                                val time = LocalTime.fromSecondOfDay(secondOfDay.toInt())
-                                val simulatedTimestamp = pickedLocalDate.atTime(time).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                            var secondOfDay by remember { mutableStateOf(0.0) }
+                            Slider(
+                                secondOfDay.toFloat(),
+                                { secondOfDay = it.toDouble() },
+                                Modifier.padding(16.dp),
+                                valueRange = 0f..(3600*24f-1)
+                            )
+                            val time = LocalTime.fromSecondOfDay(secondOfDay.toInt())
+                            val simulatedTimestamp = pickedLocalDate.atTime(time).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
+                            var locs by remember { mutableStateOf(locations[obj.id] ?: listOf())}
+
+                            LaunchedEffect(Unit) {
+                                locs = platform.database.locationValueDao().getForID(obj.id)
+                            }
+                            if(locs.isNotEmpty()) {
                                 val points = locs.map { it.timestamp to it.coord }
                                 val closest =
                                     points.minBy { abs(it.first - simulatedTimestamp) }
-                                LaunchedEffect(closest) {
+                                LaunchedEffect(closest.first) {
                                     val newZoom = max(camera.position.zoom, 14.0)
                                     camera.animateTo(
                                         camera.position.copy(
@@ -575,15 +574,15 @@ fun MapView() {
                                         )
                                     )
                                 }
-                                ListItem(TextP(LocalTime.Format {
-                                    amPmHour()
-                                    chars(":")
-                                    minute()
-                                    chars(" ")
-                                    amPmMarker("am", "pm")
-                                }.format(time)))
-
                             }
+                            ListItem(TextP(LocalTime.Format {
+                                amPmHour()
+                                chars(":")
+                                minute()
+                                chars(" ")
+                                amPmMarker("am", "pm")
+                            }.format(time)))
+
                         }
                     }
                 }
@@ -878,13 +877,13 @@ fun DeviceSheetContent(device: BluetoothDevice) {
     }
 }
 
-var AddPersonPopupInitial: ULong? = null;
+var AddPersonPopupInitial: ULong? = null
 
 @Composable
 fun DialogScope.AddPersonPopup(users: List<User>) {
-    var usersAwaitingRequest = users.filter { it.requestStatus == RequestStatus.AWAITING_REQUEST }.map { it.id };
-    var usersAlreadySharing = users.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }.map { it.id };
-    var usersAwaitingResponse = users.filter { it.requestStatus == RequestStatus.AWAITING_RESPONSE }.map { it.id };
+    val usersAwaitingRequest = users.filter { it.requestStatus == RequestStatus.AWAITING_REQUEST }.map { it.id }
+    val usersAlreadySharing = users.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }.map { it.id }
+    val usersAwaitingResponse = users.filter { it.requestStatus == RequestStatus.AWAITING_RESPONSE }.map { it.id }
     var contactName by remember { mutableStateOf("") }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->

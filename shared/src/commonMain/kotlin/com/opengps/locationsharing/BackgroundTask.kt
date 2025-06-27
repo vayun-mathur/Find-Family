@@ -9,7 +9,6 @@ import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.ExperimentalTime
 
 var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
@@ -31,7 +30,6 @@ suspend fun checkSharingRequests() {
 private suspend fun locationBackend(locationValue: LocationValue) {
     println("updated location")
     if(locations.isEmpty()) {
-        platform.database.locationValueDao().clearBefore((Clock.System.now() - 4.days).toEpochMilliseconds())
         locations = platform.database.locationValueDao().getSince((Clock.System.now() - 2.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
     }
 

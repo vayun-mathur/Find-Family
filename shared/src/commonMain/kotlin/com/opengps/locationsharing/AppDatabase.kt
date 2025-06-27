@@ -1,6 +1,5 @@
 package com.opengps.locationsharing
 
-import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -95,7 +94,7 @@ interface WaypointDao {
     @Transaction
     suspend fun setAll(waypoints: List<Waypoint>) {
         clear()
-        insertAll(waypoints);
+        insertAll(waypoints)
     }
 }
 
@@ -116,7 +115,7 @@ interface UsersDao {
     @Transaction
     suspend fun setAll(users: List<User>) {
         clear()
-        insertAll(users);
+        insertAll(users)
     }
 }
 
@@ -128,6 +127,8 @@ interface LocationValueDao {
     suspend fun getSince(timestamp: Long): List<LocationValue>
     @Query("DELETE FROM LocationValue WHERE timestamp < :timestamp")
     suspend fun clearBefore(timestamp: Long)
+    @Query("SELECT * FROM LocationValue WHERE userid = :id")
+    suspend fun getForID(id: ULong): List<LocationValue>
     @Upsert
     suspend fun upsert(locationValue: LocationValue)
     @Upsert
