@@ -47,7 +47,7 @@ class BackgroundLocationService : Service() {
             updateNotification("started")
             var availability = true
             while(true) {
-                val location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                val location = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER)
                 if(location != null) {
                     backgroundTask(
                         Coord(
