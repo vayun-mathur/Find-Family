@@ -25,90 +25,9 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun Main() {
-    var isSetup by remember { mutableStateOf(platform.dataStoreUtils.getLong("userid") != null) }
     LaunchedEffect(Unit) {
         Networking.init()
-        if(Networking.userid != null) {
-            isSetup = true
-        }
         platform.runBackgroundService()
     }
-    if(isSetup)
-        MapView()
-    else {
-        SetupPage{
-            platform.runBackgroundService()
-            isSetup = true
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SetupPage(completeSetup: ()->Unit) {
-    // TODO: prevent already registered IDS
-
-    var subtext by remember { mutableStateOf("") }
-
-    fun checkError(s: String): Boolean {
-        if(s.length > 13) {
-            subtext = "ID cannot be longer than 13 characters"
-        } else if(s.length < 5) {
-            subtext = "ID cannot be shorter than 5 characters"
-        } else if(s.any{!it.isLetter()}) {
-            subtext = "ID can only contain letters"
-        } else {
-            subtext = ""
-            return false
-        }
-        return true;
-    }
-
-    var name by remember { mutableStateOf<String?>(null) }
-    var photo by remember { mutableStateOf<String?>(null) }
-
-    val contactPicker = platform.requestPickContact { name_, photo_ ->
-        name = name_
-        photo = photo_
-    }
-
-    Scaffold(topBar = {
-        TopAppBar({ Text("TopAppBar") })
-    }) { innerPadding ->
-        Column(Modifier.padding(innerPadding).padding(16.dp).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                val userID = SimpleOutlinedTextField(
-                    "User ID",
-                    isError = ::checkError,
-                    subtext = { subtext })
-
-                OutlinedButton({
-                    contactPicker()
-                }) {
-                    if(name == null) {
-                        Text("Choose Self Contact")
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            UserPicture(photo, name!!.first(), 45.dp)
-                            Spacer(Modifier.width(12.dp))
-                            Text(name!!)
-                        }
-                    }
-                }
-
-                OutlinedButton({
-                    SuspendScope {
-                        val finalID = userID().decodeBase26()
-                        platform.dataStoreUtils.setLong("userid", finalID.toLong())
-                        platform.database.usersDao().upsert(User(finalID, name!!, photo, "Unnamed Location", true, RequestStatus.MUTUAL_CONNECTION, null, null))
-                        completeSetup()
-                    }
-                }, enabled = (name != null) && !checkError(userID())) {
-                    Text("Complete Setup")
-                }
-            }
-        }
-    }
-
-
+    MapView()
 }
