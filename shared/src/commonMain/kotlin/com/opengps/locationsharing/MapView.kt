@@ -60,7 +60,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -280,10 +282,14 @@ private fun DpOffset.toOffset(density: Density): Offset {
 
 var addPersonPopupEnable: () -> Unit = {}
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun MapView() {
     val primaryColor = MaterialTheme.colorScheme.primary
+
+    BackHandler(enabled = selectedObject != null) {
+        selectedObject = null
+    }
 
     camera = rememberCameraState()
 
