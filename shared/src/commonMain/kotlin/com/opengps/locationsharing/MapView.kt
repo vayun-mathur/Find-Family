@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -175,14 +176,6 @@ fun DrawScope.Circle(position: Offset, color: Color, borderColor: Color, radius:
     drawCircle(borderColor, radius, position, style = Stroke(width = radius/20))
 }
 
-fun DrawScope.CenteredText(textMeasurer: TextMeasurer, text: String, position: Offset, color: Color = Color.Black) {
-    try {
-        drawText(textMeasurer, text, position - textMeasurer.measure(text).size / 2, style = TextStyle(color = color))
-    } catch(e: Exception) {
-        e.printStackTrace()
-    }
-}
-
 operator fun Offset.minus(intSize: IntSize): Offset {
     return Offset(x - intSize.width, y - intSize.height)
 }
@@ -285,8 +278,6 @@ var addPersonPopupEnable: () -> Unit = {}
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun MapView() {
-    val primaryColor = MaterialTheme.colorScheme.primary
-
     BackHandler(enabled = selectedObject != null) {
         selectedObject = null
     }
@@ -455,7 +446,6 @@ fun MapView() {
                     ClickResult.Pass
                 }
             )
-            val textMeasurer = rememberTextMeasurer()
             key(camera.position) {
                 Canvas(Modifier.fillMaxSize()) {
                     if (initialized) {
@@ -481,20 +471,16 @@ fun MapView() {
                                 radiusPx
                             )
                         }
-                        for (user in users) {
-                            if (user.lastLocationValue == null) continue
-                            val center =
-                                camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
-                            if (center !in size.toDpSize()) continue
+                    }
+                }
+                if (initialized) {
+                    for (user in users) {
+                        if (user.lastLocationValue == null) continue
+                        val center =
+                            camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
 
-                            Circle(center.toOffset(this), Color.Green, primaryColor, 75f)
-                            CenteredText(
-                                textMeasurer,
-                                "${user.name[0]}",
-                                center.toOffset(this),
-                                primaryColor
-                            )
-                            // todo: show profile photo
+                        Box(Modifier.offset(center.x-35.dp, center.y-35.dp)) {
+                            UserPicture(user, 70.dp)
                         }
                     }
                 }
@@ -606,9 +592,6 @@ private fun DpOffset.getDistance(): Float {
 }
 
 private fun Coord.toPosition() = Position(lon, lat)
-
-
-private fun Position.toCoord() = Coord(latitude, longitude)
 
 @Composable
 fun DialogScope.AddDevicePopup() {
