@@ -70,6 +70,9 @@ kotlin {
             implementation("io.github.vinceglb:filekit-dialogs-compose:0.10.0-beta04")
             implementation("io.github.vinceglb:filekit-coil:0.10.0-beta04")
             implementation("org.jetbrains.compose.ui:ui-backhandler")
+            implementation(libs.compass.geocoder)
+            implementation(libs.compass.geocoder.mobile)
+
 
         }
         androidMain.dependencies {

@@ -3,6 +3,9 @@ package com.opengps.locationsharing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dev.jordond.compass.Coordinates
+import dev.jordond.compass.geocoder.Geocoder
+import dev.jordond.compass.geocoder.placeOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.random.Random
@@ -36,6 +39,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     checkSharingRequests()
 
     val usersDao = platform.database.usersDao()
+    val geocoder = Geocoder()
     var users = usersDao.getAll()
     val waypoints = platform.database.waypointDao().getAll()
 
@@ -86,33 +90,53 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         val waypointsSubset = waypoints.filter { !it.usersInactive.contains(user.id) }
         // enter or exit waypoints
         val wpIn = waypointsSubset.find { havershine(it.coord, latest.coord) < it.range }
-        if(wpIn != null) {
-            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
-            if(newUser.locationName != wpIn.name) {
-                newUser = newUser.copy(locationName = wpIn.name, lastLocationChangeTime = Clock.System.now())
-                if(wasInEarlier != wpIn) {
-                    if(user.id != Networking.userid)
-                        platform.createNotification(
-                            user.name,
-                            "${user.name} has entered ${wpIn.name}",
-                            "WAYPOINT_ENTER_EXIT"
-                        )
-                }
-            }
-        } else {
-            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
-            if(newUser.locationName != "Unnamed Location") {
-                newUser = newUser.copy(locationName = "Unnamed Location", lastLocationChangeTime = Clock.System.now())
-                if(wasInEarlier != null) {
-                    if(user.id != Networking.userid)
-                        platform.createNotification(
-                            user.name,
-                            "${user.name} has left ${user.locationName}",
-                            "WAYPOINT_ENTER_EXIT"
-                        )
-                }
-            }
+
+        val geocoderResult = geocoder.placeOrNull(Coordinates(latest.coord.lat, latest.coord.lon))?.let {
+            it.name ?: "${it.subThoroughfare} ${it.thoroughfare}"
         }
+
+        println("GEOCODER RESULT: $geocoderResult")
+
+        val locationName = wpIn?.name ?: geocoderResult ?: "Unnamed Location"
+
+        if(locationName != newUser.locationName) {
+            newUser = newUser.copy(locationName = locationName, lastLocationChangeTime = Clock.System.now(), lastCoord = latest.coord)
+            if(wpIn != null && user.id != Networking.userid)
+                platform.createNotification(
+                    user.name,
+                    "${user.name} has entered ${wpIn.name}",
+                    "WAYPOINT_ENTER_EXIT"
+                )
+
+        }
+
+//        if(wpIn != null) {
+//            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
+//            if(newUser.locationName != wpIn.name) {
+//                newUser = newUser.copy(locationName = wpIn.name, lastLocationChangeTime = Clock.System.now(), lastCoord = latest.coord)
+//                if(wasInEarlier != wpIn) {
+//                    if(user.id != Networking.userid)
+//                        platform.createNotification(
+//                            user.name,
+//                            "${user.name} has entered ${wpIn.name}",
+//                            "WAYPOINT_ENTER_EXIT"
+//                        )
+//                }
+//            }
+//        } else {
+//            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
+//            if(newUser.locationName != "Unnamed Location") {
+//                newUser = newUser.copy(locationName = "Unnamed Location", lastLocationChangeTime = Clock.System.now(), lastCoord = latest.coord)
+//                if(wasInEarlier != null) {
+//                    if(user.id != Networking.userid)
+//                        platform.createNotification(
+//                            user.name,
+//                            "${user.name} has left ${user.locationName}",
+//                            "WAYPOINT_ENTER_EXIT"
+//                        )
+//                }
+//            }
+//        }
         usersDao.upsert(newUser)
     }
 

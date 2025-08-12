@@ -27,6 +27,8 @@ androidx-room = "2.7.0"
 ksp = "2.1.21-2.0.1"
 runtimeServiceUi = "2.2.0"
 sqliteBundled = "2.5.0"
+compass = "1.2.2"
+
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose" }
@@ -67,6 +69,9 @@ resource-noexec-tor = { module = "io.matthewnelson.kmp-tor:resource-noexec-tor",
 runtime = { module = "io.matthewnelson.kmp-tor:runtime", version.ref = "runtime" }
 runtime-service-ui = { module = "io.matthewnelson.kmp-tor:runtime-service-ui", version.ref = "runtimeServiceUi" }
 maplibre-compose = { module = "dev.sargunv.maplibre-compose:maplibre-compose", version = "0.7.0" }
+compass-geocoder = { module = "dev.jordond.compass:geocoder", version.ref = "compass" }
+compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", version.ref = "compass" }
+
 
 
 [plugins]
