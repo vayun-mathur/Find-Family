@@ -16,7 +16,6 @@ datastorePreferencesCoreJvm = "1.1.4"
 ktorSerializationKotlinxJson = "3.1.1"
 mapcomposeMp = "0.9.4"
 navigationCompose = "2.8.0-alpha10"
-resourceNoexecTor = "408.15.0"
 runtime = "2.2.0"
 runtimeAndroid = "1.7.8"
 compose-multiplatform = "1.8.2"
@@ -65,7 +64,6 @@ androidx-activity = { group = "androidx.activity", name = "activity", version.re
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
 androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "androidx-room" }
-resource-noexec-tor = { module = "io.matthewnelson.kmp-tor:resource-noexec-tor", version.ref = "resourceNoexecTor" }
 runtime = { module = "io.matthewnelson.kmp-tor:runtime", version.ref = "runtime" }
 runtime-service-ui = { module = "io.matthewnelson.kmp-tor:runtime-service-ui", version.ref = "runtimeServiceUi" }
 maplibre-compose = { module = "dev.sargunv.maplibre-compose:maplibre-compose", version = "0.7.0" }

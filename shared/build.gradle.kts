@@ -39,7 +39,6 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.components.resources)
             implementation(libs.runtime.service.ui)
-            implementation(libs.resource.noexec.tor)
             implementation(libs.runtime)
             implementation(libs.androidx.room.runtime)
             implementation(libs.kotlinx.datetime)
