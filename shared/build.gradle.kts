@@ -102,7 +102,7 @@ android {
     namespace = "com.opengps.locationsharing"
     compileSdk = 35
     defaultConfig {
-        minSdk = 32
+        minSdk = 31
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

@@ -9,7 +9,7 @@ android {
     compileSdk = 35
     defaultConfig {
         applicationId = "cc.findfamily.app"
-        minSdk = 32
+        minSdk = 31
         targetSdk = 35
         versionCode = 9
         versionName = "v1.8"
