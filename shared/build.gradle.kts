@@ -38,8 +38,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(compose.components.resources)
-            implementation(libs.runtime.service.ui)
-            implementation(libs.runtime)
             implementation(libs.androidx.room.runtime)
             implementation(libs.kotlinx.datetime)
             implementation(libs.navigation.compose)
@@ -47,7 +45,6 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.ui)
-            implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(compose.components.resources)
             implementation(compose.material3)
@@ -57,18 +54,18 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
-            implementation(libs.androidx.datastore.preferences.core)
+            implementation(libs.androidx.datastore.preferences)
             implementation(libs.cryptography.core)
 
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
             implementation(libs.maplibre.compose)
 
-            implementation("io.github.vinceglb:filekit-core:0.10.0-beta04")
-            implementation("io.github.vinceglb:filekit-dialogs:0.10.0-beta04")
-            implementation("io.github.vinceglb:filekit-dialogs-compose:0.10.0-beta04")
-            implementation("io.github.vinceglb:filekit-coil:0.10.0-beta04")
-            implementation("org.jetbrains.compose.ui:ui-backhandler")
+            implementation(libs.filekit.core)
+            implementation(libs.filekit.dialogs)
+            implementation(libs.filekit.dialogs.compose)
+            implementation(libs.filekit.coil)
+            implementation("org.jetbrains.compose.ui:ui-backhandler:1.10.0-alpha01")
             implementation(libs.compass.geocoder)
             implementation(libs.compass.geocoder.mobile)
 
@@ -100,13 +97,21 @@ kotlin {
 
 android {
     namespace = "com.opengps.locationsharing"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         minSdk = 31
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll(listOf(
+            "-opt-in=kotlin.time.ExperimentalTime"
+        ))
     }
 }
 

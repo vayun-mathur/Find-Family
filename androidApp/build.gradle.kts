@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
@@ -6,11 +8,11 @@ plugins {
 
 android {
     namespace = "com.opengps.locationsharing.android"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "cc.findfamily.app"
         minSdk = 31
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 9
         versionName = "v1.8"
     }
@@ -31,14 +33,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
     dependenciesInfo {
         // Disables dependency metadata when building APKs.
         includeInApk = false
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_1_8
+        freeCompilerArgs.addAll(listOf(
+            "-opt-in=kotlin.time.ExperimentalTime"
+        ))
     }
 }
 
@@ -49,7 +57,6 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.datastore.preferences.core.jvm)
     implementation(libs.androidx.activity)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.ktx)

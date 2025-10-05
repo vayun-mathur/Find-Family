@@ -20,6 +20,7 @@ import io.ktor.util.encodeBase64
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
+import kotlin.time.ExperimentalTime
 
 class Networking {
     companion object {
@@ -126,6 +127,7 @@ class Networking {
             }
         }
 
+        @OptIn(ExperimentalTime::class)
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
             return checkNetworkDown {
                 val key = if(user.encryptionKey != null) {

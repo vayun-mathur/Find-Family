@@ -6,12 +6,13 @@ import androidx.compose.runtime.setValue
 import dev.jordond.compass.Coordinates
 import dev.jordond.compass.geocoder.Geocoder
 import dev.jordond.compass.geocoder.placeOrNull
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.ExperimentalTime
 
 var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
@@ -20,6 +21,7 @@ const val SHARE_INTERVAL = 3000L
 
 private var counter = 100
 
+@OptIn(ExperimentalTime::class)
 suspend fun checkSharingRequests() {
     // retrieve requests
     Networking.retrieveRequestsOfMe().map {
@@ -30,6 +32,7 @@ suspend fun checkSharingRequests() {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 private suspend fun locationBackend(locationValue: LocationValue) {
     println("updated location")
     if(locations.isEmpty()) {
@@ -159,9 +162,11 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 //    }
 }
 
+@OptIn(ExperimentalTime::class)
 private var lastCalled = Instant.fromEpochMilliseconds(0)
 
 // will be called every SHARE_INTERVAL
+@OptIn(ExperimentalTime::class)
 suspend fun backgroundTask(location: Coord, speed: Float, sleep: Boolean = false) {
     if(Networking.userid == null) return
     if(Clock.System.now() - lastCalled < SHARE_INTERVAL.milliseconds*0.8) return

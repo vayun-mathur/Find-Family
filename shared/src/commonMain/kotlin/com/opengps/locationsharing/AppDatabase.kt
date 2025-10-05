@@ -14,10 +14,17 @@ import androidx.room.Transaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 interface ObjectParent {
     val id: ULong
@@ -52,8 +59,16 @@ enum class RequestStatus {
     AWAITING_RESPONSE
 }
 
+@OptIn(ExperimentalTime::class)
+class InstantSerializer() : KSerializer<Instant> {
+    override fun deserialize(decoder: Decoder) = Instant.fromEpochMilliseconds(decoder.decodeLong())
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Instant", PrimitiveKind.LONG)
+    override fun serialize(encoder: Encoder, value: Instant) = encoder.encodeLong(value.toEpochMilliseconds())
+}
+
 @Entity
 @Serializable
+@OptIn(ExperimentalTime::class)
 data class User(
     @PrimaryKey(autoGenerate = true) override val id: ULong = 0uL,
     override val name: String,
@@ -63,8 +78,10 @@ data class User(
     var requestStatus: RequestStatus,
     var lastBatteryLevel: Float?,
     var lastCoord: Coord?,
+    @Serializable(with = InstantSerializer::class)
     var lastLocationChangeTime: Instant = Clock.System.now(),
     var lastLocationValue: LocationValue? = null,
+    @Serializable(with = InstantSerializer::class)
     var deleteAt: Instant? = null,
     var encryptionKey: String? = null,
 ): ObjectParent
@@ -98,6 +115,7 @@ interface WaypointDao {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 @Dao
 interface UsersDao {
     @Query("SELECT * FROM User")
@@ -149,6 +167,7 @@ interface BluetoothDeviceDao {
     suspend fun delete(bluetoothDevice: BluetoothDevice)
 }
 
+@OptIn(ExperimentalTime::class)
 class TC {
     @TypeConverter fun fromULong(value: ULong) = value.toLong()
     @TypeConverter fun toULong(value: Long) = value.toULong()

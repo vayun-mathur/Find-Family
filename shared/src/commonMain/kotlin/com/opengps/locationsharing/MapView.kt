@@ -98,8 +98,8 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -150,6 +150,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun TextP(text: String) = @Composable {Text(text)}
@@ -180,6 +181,7 @@ operator fun Offset.minus(intSize: IntSize): Offset {
     return Offset(x - intSize.width, y - intSize.height)
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun UserCard(user: User, showSupportingContent: Boolean) {
     val lastUpdatedTime = user.lastLocationValue?.let { if(it.sleep) "Just now" else timestring(it.timestamp) } ?: "Never"
@@ -201,12 +203,12 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
             amPmMarker("am", "pm")
         })
         val formattedDate = when(sinceTime.date.toEpochDays() - Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toEpochDays()) {
-            0 -> "today"
-            1 -> "yesterday"
+            0L -> "today"
+            1L -> "yesterday"
             else -> sinceTime.date.format(LocalDate.Format {
                 monthName(MonthNames.ENGLISH_ABBREVIATED)
                 chars(" ")
-                dayOfMonth()
+                day()
             })
         }
         "Since $formattedTime $formattedDate"
@@ -275,7 +277,7 @@ private fun DpOffset.toOffset(density: Density): Offset {
 
 var addPersonPopupEnable: () -> Unit = {}
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
 @Composable
 fun MapView() {
     BackHandler(enabled = selectedObject != null) {
@@ -648,6 +650,7 @@ fun BasicDialog(dismiss: () -> Unit = {}, content: @Composable DialogScope.() ->
     return {enable = true}
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun UserSheetContent(user: User) {
     val usersDao = platform.database.usersDao()
@@ -814,6 +817,7 @@ fun UserAwaitingResponse(user: User) {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun SheetContent(selectedObject: ObjectParent?, usersAll: List<User>, waypoints: List<Waypoint>, devices: List<BluetoothDevice>) {
     val users = usersAll.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }
@@ -868,6 +872,7 @@ fun DeviceSheetContent(device: BluetoothDevice) {
 
 var AddPersonPopupInitial: ULong? = null
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun DialogScope.AddPersonPopup(users: List<User>) {
     val usersAwaitingRequest = users.filter { it.requestStatus == RequestStatus.AWAITING_REQUEST }.map { it.id }
@@ -965,7 +970,7 @@ fun DialogScope.AddPersonPopup(users: List<User>) {
         }
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun DialogScope.AddPersonPopupTemporary() {
     val minutes_str = stringResource(Res.string.minutes)

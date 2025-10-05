@@ -4,16 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.AutoMigration
 import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
-import io.matthewnelson.kmp.tor.runtime.TorRuntime
 import okio.Path.Companion.toPath
 
 abstract class Platform {
-
-    abstract val runtimeEnvironment: TorRuntime.Environment
     abstract val dataStore: DataStore<Preferences>
     val dataStoreUtils = DataStoreUtils { this.dataStore }
     abstract val database: AppDatabase

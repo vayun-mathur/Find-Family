@@ -23,22 +23,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
-import io.matthewnelson.kmp.tor.resource.noexec.tor.ResourceLoaderTorNoExec
-import io.matthewnelson.kmp.tor.runtime.TorRuntime
-import io.matthewnelson.kmp.tor.runtime.service.TorServiceConfig
 import kotlin.random.Random
 import kotlin.random.nextULong
 
-
-private val ServiceConfig = TorServiceConfig.Builder {
-    // configure...
-}
-
 class AndroidPlatform(private val context: Context): Platform() {
-
-    override val runtimeEnvironment: TorRuntime.Environment by lazy {
-        ServiceConfig.newEnvironment(ResourceLoaderTorNoExec::getOrCreate)
-    }
 
     override val dataStore: DataStore<Preferences> = createDataStore(context)
 

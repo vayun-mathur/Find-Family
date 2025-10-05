@@ -5,13 +5,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.math.PI
 import kotlin.math.pow
+import kotlin.time.ExperimentalTime
 
 fun radians(degrees: Double) = degrees * PI / 180
 
+@OptIn(ExperimentalTime::class)
 fun timestring(timestamp: Long): String {
     val currentTime = Clock.System.now()
     val timestampInstant = Instant.fromEpochMilliseconds(timestamp)

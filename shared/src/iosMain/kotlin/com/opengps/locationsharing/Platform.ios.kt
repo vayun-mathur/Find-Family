@@ -6,11 +6,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import io.matthewnelson.kmp.file.absoluteFile
-import io.matthewnelson.kmp.file.resolve
-import io.matthewnelson.kmp.file.toFile
-import io.matthewnelson.kmp.tor.resource.noexec.tor.ResourceLoaderTorNoExec
-import io.matthewnelson.kmp.tor.runtime.TorRuntime
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Contacts.CNContact
 import platform.ContactsUI.CNContactPickerDelegateProtocol
@@ -45,30 +40,6 @@ import kotlin.random.Random
 import kotlin.random.nextULong
 
 class IOSPlatform: Platform() {
-
-    override val runtimeEnvironment: TorRuntime.Environment by lazy {
-        // ../data/Library
-        val library = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, true)
-            .firstOrNull()
-            ?.toString()
-            ?.ifBlank { null }
-            ?.toFile()
-            ?: "".toFile().absoluteFile.resolve("Library")
-
-        // ../data/Library/Caches
-        val caches = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true)
-            .firstOrNull()
-            ?.toString()
-            ?.ifBlank { null }
-            ?.toFile()
-            ?: library.resolve("Caches")
-
-        TorRuntime.Environment.Builder(
-            workDirectory = library.resolve("kmptor"),
-            cacheDirectory = caches.resolve("kmptor"),
-            loader = ResourceLoaderTorNoExec::getOrCreate,
-        )
-    }
 
     @OptIn(ExperimentalForeignApi::class)
     override val dataStore: DataStore<Preferences> = createDataStore(
