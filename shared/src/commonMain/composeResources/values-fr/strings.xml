@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_person">Ajouter une personne</string>
+    <string name="create_sharable_link">Créer un lien partageable</string>
+    <string name="add_saved_location">Ajouter un lieu</string>
+    <string name="new_saved_place">Nouveau lieu</string>
+    <string name="showing">Affiché:</string>
+    <string name="present">Présent</string>
+    <string name="past">Passé</string>
+    <string name="connect_bluetooth_device">Connecter un appareil Bluetooth</string>
+    <string name="connect_bluetooth_device_description">Les appareils doivent être connectés au téléphone pour apparaître ici</string>
+    <string name="show_on_map">Afficher sur la carte</string>
+    <string name="share_your_location">Partager la localisation</string>
+    <string name="change_connected_contact">Changer le contact associé</string>
+    <string name="time_remaining">Temps restant</string>
+    <string name="hour">heure</string>
+    <string name="hours">heures</string>
+    <string name="minutes">minutes</string>
+    <string name="saved_place_name">Nom du lieu</string>
+    <string name="saved_place_range">Taille (rayon) du lieu</string>
+    <string name="save">Sauvegarder</string>
+    <string name="saved_place_notification">Notifications d'entrée/sortie d'un lieu</string>
+    <string name="tap_pick_contact">Cliquez pour séclectionner un contact</string>
+    <string name="contact_findfamily_id">Identifiant FindFamily du contact</string>
+    <string name="contact_findfamily_id_desc">Partagez votre identifiant FindFamily avec votre contact, puis entrez son identifiant ici.</string>
+    <string name="copy_findfamily_id">Copier votre identifiant FindFamily</string>
+    <string name="unnamed_location">Lieu inconnu</string>
+    <string name="request_start_sharing">Demander le partage de localisation</string>
+    <string name="accept_start_sharing">Commencer le partage de localisation</string>
+    <string name="temporary_link_title">Lien FindFamily temporaire</string>
+    <string name="temporary_link_name">Nomez ce lien</string>
+    <string name="temporary_link_expiry">le lien expire dans</string>
+    <string name="temporary_link_submit">Créer un lien partageable temporaire</string>
+</resources>
