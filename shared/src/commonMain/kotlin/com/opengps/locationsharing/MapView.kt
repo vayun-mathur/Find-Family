@@ -482,7 +482,7 @@ fun MapView() {
     }, bottomBar = {
         BottomAppBar(Modifier.height(400.dp)) {
             Column(Modifier.height(400.dp).verticalScroll(rememberScrollState())) {
-                SheetContent(selectedObject, usersAll, waypoints, devices)
+                SheetContent(selectedObject, usersAll, waypoints, devices) {objects = objects - it.id + (it.id to it)}
             }
         }
     }) { padding ->
@@ -660,7 +660,7 @@ fun BasicDialog(dismiss: () -> Unit = {}, content: @Composable DialogScope.() ->
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun UserSheetContent(user: User) {
+fun UserSheetContent(user: User, updateUser: (User) -> Unit) {
     val usersDao = platform.database.usersDao()
 
     val requestPickContact1 = platform.requestPickContact { name, photo ->
@@ -823,11 +823,11 @@ fun UserAwaitingResponse(user: User) {
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SheetContent(selectedObject: ObjectParent?, usersAll: List<User>, waypoints: List<Waypoint>, devices: List<BluetoothDevice>) {
+fun SheetContent(selectedObject: ObjectParent?, usersAll: List<User>, waypoints: List<Waypoint>, devices: List<BluetoothDevice>, updateUser: (User) -> Unit) {
     val users = usersAll.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }
     when(selectedObject) {
         is BluetoothDevice -> DeviceSheetContent(selectedObject)
-        is User -> UserSheetContent(selectedObject)
+        is User -> UserSheetContent(selectedObject, updateUser)
         is Waypoint -> WaypointSheetContent(selectedObject, users)
         else -> {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

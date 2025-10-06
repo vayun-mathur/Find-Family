@@ -25,7 +25,7 @@ private var counter = 100
 suspend fun checkSharingRequests() {
     // retrieve requests
     Networking.retrieveRequestsOfMe().map {
-        User(it.decodeBase26(), it, null, "", false, RequestStatus.AWAITING_REQUEST, null, null)
+        User(it.toULong(), it.toULong().encodeBase26(), null, "", false, RequestStatus.AWAITING_REQUEST, null, null)
     }.forEach {
         platform.database.usersDao().upsert(it)
         platform.createNotification("Your Location Requested", "by ${it.id.encodeBase26()}", channelId = "SHARING_REQUEST")
