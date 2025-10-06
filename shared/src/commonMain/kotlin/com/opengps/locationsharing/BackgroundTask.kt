@@ -60,6 +60,8 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     }
 
     users.filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
+    println(users.map{it.id})
+    println(users.map{it.send})
     val recievedLocations = Networking.receiveLocations() ?: listOf()
 
     val newLocations = recievedLocations.groupBy { it.userid }.filterKeys { id -> users.firstOrNull{it.id == id} != null }.mapValues { it.value.sortedBy { it.timestamp } }
@@ -97,8 +99,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         val geocoderResult = geocoder.placeOrNull(Coordinates(latest.coord.lat, latest.coord.lon))?.let {
             it.name ?: "${it.subThoroughfare} ${it.thoroughfare}"
         }
-
-        println("GEOCODER RESULT: $geocoderResult")
 
         val locationName = wpIn?.name ?: geocoderResult ?: "Unnamed Location"
 

@@ -71,11 +71,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -98,8 +94,6 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
-import kotlin.time.Clock
-import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -146,11 +140,13 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.random.nextULong
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 @Composable
 fun TextP(text: String) = @Composable {Text(text)}
@@ -511,7 +507,7 @@ fun MapView() {
                                 val datestring = LocalDate.Format {
                                     monthNumber()
                                     chars("/")
-                                    dayOfMonth()
+                                    day()
                                     chars("/")
                                     year()
                                 }.format(pickedLocalDate)
@@ -583,10 +579,6 @@ fun MapView() {
             }
         }
     }
-}
-
-private operator fun DpSize.contains(dpOffset: DpOffset): Boolean {
-    return dpOffset.x in 0.dp..width && dpOffset.y in 0.dp..height
 }
 
 private fun DpOffset.getDistance(): Float {
@@ -1018,7 +1010,7 @@ fun DialogScope.AddPersonPopupTemporary() {
 
             val newUser = User(Random.nextULong(), contactName(), null,
                 keypair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM).encodeBase64(),
-                false, RequestStatus.MUTUAL_CONNECTION, null, null,
+                true, RequestStatus.MUTUAL_CONNECTION, null, null,
                 deleteAt = Clock.System.now() + when (expiryTime) {
                         "15 $minutes_str" -> 15.minutes
                         "30 $minutes_str" -> 30.minutes

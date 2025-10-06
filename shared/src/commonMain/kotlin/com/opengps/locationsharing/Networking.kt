@@ -20,7 +20,6 @@ import io.ktor.util.encodeBase64
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.random.Random
-import kotlin.time.ExperimentalTime
 
 class Networking {
     companion object {
@@ -60,13 +59,13 @@ class Networking {
                 val x = try_connect()
                 network_is_down = false
                 return x
-            } catch(e: ConnectTimeoutException) {
+            } catch(_: ConnectTimeoutException) {
                 if (!network_is_down) {
                     //TODO: notify user
                     println("network is down")
                 }
                 network_is_down = true
-            } catch(e: SocketTimeoutException) {
+            } catch(_: SocketTimeoutException) {
                 if (!network_is_down) {
                     //TODO: notify user
                     println("network is down")
@@ -127,7 +126,6 @@ class Networking {
             }
         }
 
-        @OptIn(ExperimentalTime::class)
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
             return checkNetworkDown {
                 val key = if(user.encryptionKey != null) {
@@ -166,8 +164,7 @@ class Networking {
                     contentType(ContentType.Application.Json)
                     setBody("{\"requester\": \"${userid!!.encodeBase26()}\", \"requested\": \"${requested.encodeBase26()}\"}")
                 }
-                if(response.status != HttpStatusCode.OK) return@checkNetworkDown false;
-                return@checkNetworkDown true
+                return@checkNetworkDown response.status == HttpStatusCode.OK
             } ?: false
         }
 
@@ -177,7 +174,7 @@ class Networking {
                     contentType(ContentType.Application.Json)
                     setBody("{\"requested\": \"${userid!!.encodeBase26()}\"}")
                 }
-                if(response.status != HttpStatusCode.OK) return@checkNetworkDown listOf();
+                if(response.status != HttpStatusCode.OK) return@checkNetworkDown listOf()
                 return@checkNetworkDown response.body<List<String>>()
             } ?: listOf()
         }
