@@ -1,10 +1,47 @@
 package com.opengps.locationsharing
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.toLocalDateTime
+import location_sharing.shared.generated.resources.Res
+import location_sharing.shared.generated.resources.temporary_link_expiry
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.math.PI
@@ -58,3 +95,116 @@ fun UISuspendScope(block: suspend () -> Unit): Job {
         block()
     }
 }
+
+operator fun Offset.minus(intSize: IntSize): Offset {
+    return Offset(x - intSize.width, y - intSize.height)
+}
+
+object DateFormats {
+    // example: Jun 4
+    val MONTH_DAY = LocalDate.Format {
+        monthName(MonthNames.ENGLISH_ABBREVIATED)
+        chars(" ")
+        day()
+    }
+    // example: 05/12/2025
+    val DATE_INPUT = LocalDate.Format {
+        monthName(MonthNames.ENGLISH_ABBREVIATED)
+        chars(" ")
+        day()
+    }
+    // example: 10:05 am
+    val TIME_AM_PM = LocalTime.Format {
+        amPmHour()
+        chars(":")
+        minute()
+        chars(" ")
+        amPmMarker("am", "pm")
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerHelper(onDatePicked: (LocalDate) -> Unit) {
+    var pickedDate by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds())}
+    val pickedLocalDate by remember { derivedStateOf { Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date } }
+    LaunchedEffect(pickedLocalDate) {
+        onDatePicked(pickedLocalDate)
+    }
+    var showDialog by remember { mutableStateOf(false) }
+    OutlinedButton({
+        showDialog = true
+    }) {
+        Text(pickedLocalDate.format(DateFormats.DATE_INPUT))
+    }
+    if(showDialog) {
+        val datePickerState = rememberDatePickerState(pickedDate)
+        DatePickerDialog(
+            onDismissRequest = {showDialog = false},
+            dismissButton = {
+                Button({showDialog = false}) {
+                    Text("Cancel")
+                }
+            },
+            confirmButton = {
+                Button({
+                    showDialog = false
+                    datePickerState.selectedDateMillis?.let {
+                        pickedDate = it
+                    }
+                }) {
+                    Text("Select Date")
+                }
+            },
+        ) {
+            DatePicker(datePickerState)
+        }
+    }
+}
+
+@Composable
+fun SimpleOutlinedTextField(label: String, initial: String = "", suffix: @Composable (() -> Unit)? = null, readOnly: Boolean = false, onChange: (String) -> String? = {null}, isError: (String) -> Boolean = {false}, subtext: (String) -> String? = {null}): ()->String {
+    var text by remember { mutableStateOf(initial) }
+    OutlinedTextField(text, { text = it; text = onChange(it)?:text }, label = { Text(label) }, suffix = suffix, readOnly = readOnly, isError = isError(text), supportingText = {subtext(text)?.let { Text(it) }})
+    return { text }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DropdownField(value: String, setValue: (String) -> Unit, options: Collection<String>) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedTextField(
+            value, {}, Modifier.fieldClickable { expanded = true }, readOnly = true,
+            label = TextP(
+                stringResource(Res.string.temporary_link_expiry)
+            ),
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(
+                    expanded = expanded
+                )
+            },
+        )
+        DropdownMenu(expanded, { expanded = false }) {
+            options.forEach { selectionOption ->
+                DropdownMenuItem(TextP(text = selectionOption), {
+                    setValue(selectionOption)
+                    expanded = false
+                })
+            }
+        }
+    }
+}
+
+inline fun Modifier.fieldClickable(crossinline onClick: () -> Unit): Modifier =
+    this.then(composed {
+        pointerInput(Unit) {
+            awaitEachGesture {
+                awaitFirstDown(pass = PointerEventPass.Initial)
+                val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                if (upEvent != null) {
+                    onClick()
+                }
+            }
+        }
+    })

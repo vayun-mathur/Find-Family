@@ -2,7 +2,7 @@ package com.opengps.locationsharing
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import platform.CoreLocation.CLLocation
 
 private var last_time: Long = 0
@@ -10,8 +10,6 @@ private var last_time: Long = 0
 fun BackgroundService() {
     SuspendScope {
         Networking.init()
-        // TODO: re-enable tor eventually
-        //runtime.startDaemonAsync()
     }
 }
 

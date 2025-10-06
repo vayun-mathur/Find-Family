@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,29 +31,29 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -65,6 +67,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -77,7 +80,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -94,39 +96,31 @@ import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.format
-import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import location_sharing.shared.generated.resources.Res
 import location_sharing.shared.generated.resources.accept_start_sharing
-import location_sharing.shared.generated.resources.add_person
-import location_sharing.shared.generated.resources.add_saved_location
 import location_sharing.shared.generated.resources.change_connected_contact
 import location_sharing.shared.generated.resources.connect_bluetooth_device
 import location_sharing.shared.generated.resources.connect_bluetooth_device_description
 import location_sharing.shared.generated.resources.contact_findfamily_id
 import location_sharing.shared.generated.resources.contact_findfamily_id_desc
 import location_sharing.shared.generated.resources.copy_findfamily_id
-import location_sharing.shared.generated.resources.create_sharable_link
 import location_sharing.shared.generated.resources.hour
 import location_sharing.shared.generated.resources.hours
 import location_sharing.shared.generated.resources.minutes
-import location_sharing.shared.generated.resources.new_saved_place
 import location_sharing.shared.generated.resources.request_start_sharing
-import location_sharing.shared.generated.resources.save
 import location_sharing.shared.generated.resources.saved_place_name
 import location_sharing.shared.generated.resources.saved_place_notification
 import location_sharing.shared.generated.resources.saved_place_range
 import location_sharing.shared.generated.resources.share_your_location
 import location_sharing.shared.generated.resources.tap_pick_contact
-import location_sharing.shared.generated.resources.temporary_link_expiry
 import location_sharing.shared.generated.resources.temporary_link_name
 import location_sharing.shared.generated.resources.temporary_link_submit
 import location_sharing.shared.generated.resources.temporary_link_title
@@ -146,9 +140,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
-@Composable
 fun TextP(text: String) = @Composable {Text(text)}
 
 @Composable
@@ -157,24 +149,27 @@ fun UserPicture(user: User, size: Dp) {
 }
 
 @Composable
+fun GreenCircle(size: Dp, char: Char? = null) {
+    Box(Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape).background(Color.Green)) {
+        char?.let {
+            Text(char.toString(), Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
 fun UserPicture(userPhoto: String?, firstChar: Char, size: Dp) {
     val modifier = Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
     if(userPhoto != null)
         AsyncImage(userPhoto, null, modifier, contentScale = ContentScale.FillWidth)
     else {
-        Box(modifier.background(Color.Green)) {
-            Text(firstChar.toString(), Modifier.align(Alignment.Center), color = Color.White)
-        }
+        GreenCircle(size, firstChar)
     }
 }
 
 fun DrawScope.Circle(position: Offset, color: Color, borderColor: Color, radius: Float) {
     drawCircle(color, radius, position)
     drawCircle(borderColor, radius, position, style = Stroke(width = radius/20))
-}
-
-operator fun Offset.minus(intSize: IntSize): Offset {
-    return Offset(x - intSize.width, y - intSize.height)
 }
 
 @OptIn(ExperimentalTime::class)
@@ -201,11 +196,7 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
         val formattedDate = when(sinceTime.date.toEpochDays() - Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toEpochDays()) {
             0L -> "today"
             1L -> "yesterday"
-            else -> sinceTime.date.format(LocalDate.Format {
-                monthName(MonthNames.ENGLISH_ABBREVIATED)
-                chars(" ")
-                day()
-            })
+            else -> sinceTime.date.format(DateFormats.MONTH_DAY)
         }
         "Since $formattedTime $formattedDate"
     }
@@ -246,10 +237,10 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
 fun WaypointCard(waypoint: Waypoint, users: List<User>) {
     val usersWithin = users.filter { it.locationName == waypoint.name }
     val usersString = usersWithin.joinToString { it.name } + when(usersWithin.size) {
-        0 -> "nobody is"
-        1 -> " is"
-        else -> " are"
-    } + " currently here"
+        0 -> "nobody is currently here"
+        1 -> " is currently here"
+        else -> " are currently here"
+    }
     Card(Modifier.clickable(onClick = { selectedObject = waypoint
         isEditingWaypoint = false})) {
         ListItem(
@@ -272,6 +263,59 @@ private fun DpOffset.toOffset(density: Density): Offset {
 }
 
 var addPersonPopupEnable: () -> Unit = {}
+
+@Composable
+fun ExpandingFloatingActionButton(
+    onAddPersonClick: () -> Unit,
+    onAddLinkClick: () -> Unit,
+    onAddLocationClick: () -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // The three buttons that appear when the main FAB is expanded
+        if (isExpanded) {
+            SmallFloatingActionButton(
+                onClick = {
+                    onAddPersonClick()
+                    isExpanded = false
+                },
+                content = { Icon(Icons.Default.Person, contentDescription = "Add Person") }
+            )
+            SmallFloatingActionButton(
+                onClick = {
+                    onAddLinkClick()
+                    isExpanded = false
+                },
+                content = { Icon(Icons.Default.Link, contentDescription = "Add Link") }
+            )
+            SmallFloatingActionButton(
+                onClick = {
+                    onAddLocationClick()
+                    isExpanded = false
+                },
+                content = { Icon(Icons.Default.LocationOn, contentDescription = "Add Location") }
+            )
+        }
+
+        FloatingActionButton(
+            onClick = { isExpanded = !isExpanded }
+        ) {
+            val rotation by animateFloatAsState(targetValue = if (isExpanded) 45f else 0f)
+            Icon(
+                Icons.Default.Add,
+                contentDescription = "Add",
+                modifier = Modifier.rotate(rotation)
+            )
+        }
+    }
+}
+
+val editingWaypointName = mutableStateOf("")
+val editingWaypointRadius = mutableStateOf("")
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
 @Composable
@@ -325,32 +369,75 @@ fun MapView() {
     LaunchedEffect(selectedObject?.id) {
         val obj = selectedObject
         val newZoom = max(camera.position.zoom, 14.0)
-        if(obj is User && obj.lastLocationValue != null)
-            camera.animateTo(camera.position.copy(target = obj.lastLocationValue!!.coord.toPosition(), zoom = newZoom))
-        if(obj is BluetoothDevice && obj.lastLocationValue != null)
-            camera.animateTo(camera.position.copy(target = obj.lastLocationValue.coord.toPosition(), zoom = newZoom))
-        if(obj is Waypoint)
-            camera.animateTo(camera.position.copy(target = obj.coord.toPosition(), zoom = newZoom))
+        obj?.currentPosition()?.let {
+            camera.animateTo(camera.position.copy(target = it.toPosition(), zoom = newZoom))
+        }
     }
 
-    BottomSheetScaffold({
-        Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())) {
-                SheetContent(selectedObject, usersAll, waypoints, devices)
-        } }, topBar = {
-        val actions: @Composable RowScope.() -> Unit = {
+    Scaffold(Modifier.imePadding(),
+        floatingActionButton = {
             val obj = selectedObject
-            if(obj is Waypoint && !isEditingWaypoint) {
-                IconButton({
-                    currentWaypointPosition = obj.coord
-                    currentWaypointRadius = obj.range
-                    UISuspendScope {
-                        camera.animateTo(camera.position.copy(target = currentWaypointPosition.toPosition()))
+            if(obj == null) {
+                ExpandingFloatingActionButton(
+                    onAddPersonClick = {
+                        AddPersonPopupInitial = null
+                        addPersonPopupEnable()
+                    },
+                    onAddLinkClick = {
+                        addTemporaryPersonPopupEnable()
+                    },
+                    onAddLocationClick = {
+                        val newWaypoint = Waypoint(
+                            Random.nextULong(),
+                            "New Saved Place",
+                            100.0,
+                            Coord(
+                                camera.position.target.latitude,
+                                camera.position.target.longitude
+                            ),
+                            mutableListOf()
+                        )
+                        objects = objects + (newWaypoint.id to newWaypoint)
+                        SuspendScope {
+                            platform.database.waypointDao().upsert(newWaypoint)
+                        }
+                        selectedObject = newWaypoint
+                        isEditingWaypoint = true
                     }
-                    isEditingWaypoint = true
-                }) {
-                    Icon(Icons.Default.Edit, null)
+                )
+            } else if(obj is Waypoint) {
+                if(!isEditingWaypoint) {
+                    FloatingActionButton({
+                        currentWaypointPosition = obj.coord
+                        currentWaypointRadius = obj.range
+                        UISuspendScope {
+                            camera.animateTo(camera.position.copy(target = currentWaypointPosition.toPosition()))
+                        }
+                        isEditingWaypoint = true
+                    }) {
+                        Icon(Icons.Default.Edit, null)
+                    }
+                } else if(editingWaypointRadius.value.isPositiveNumber() && editingWaypointRadius.value.toDouble() <= 1000) {
+                    FloatingActionButton({
+                        SuspendScope {
+                            platform.database.waypointDao().upsert(
+                                obj.copy(
+                                    coord = currentWaypointPosition,
+                                    name = editingWaypointName.value,
+                                    range = editingWaypointRadius.value.toDouble()
+                                )
+                            )
+                        }
+                        isEditingWaypoint = false
+                    }) {
+                        Icon(Icons.Default.Save, null)
+                    }
                 }
             }
+        },
+        topBar = {
+        val actions: @Composable RowScope.() -> Unit = {
+            val obj = selectedObject
             if(obj != null && obj.id != Networking.userid) {
                 IconButton({
                     SuspendScope {
@@ -366,33 +453,9 @@ fun MapView() {
                     Icon(Icons.Default.Delete, null)
                 }
             }
-            var expanded by remember { mutableStateOf(false) }
-            IconButton({ expanded = true }) {
-                Icon(Icons.Default.Add, null)
-            }
-            val new_saved_place_string = stringResource(Res.string.new_saved_place)
-            DropdownMenu(expanded, { expanded = false }) {
-                DropdownMenuItem(TextP(stringResource(Res.string.add_person)),
-                    { AddPersonPopupInitial = null; addPersonPopupEnable(); expanded = false })
-                DropdownMenuItem(TextP(stringResource(Res.string.create_sharable_link)),
-                    { addTemporaryPersonPopupEnable(); expanded = false })
-                DropdownMenuItem(TextP(stringResource(Res.string.add_saved_location)),
-                    {
-                        val newWaypoint = Waypoint(Random.nextULong(), new_saved_place_string, 100.0, Coord(camera.position.target.latitude, camera.position.target.longitude), mutableListOf())
-                        objects = objects + (newWaypoint.id to newWaypoint)
-                        SuspendScope {
-                            platform.database.waypointDao().upsert(newWaypoint)
-                        }
-                        selectedObject = newWaypoint
-                        isEditingWaypoint = true
-                        expanded = false })
-//                DropdownMenuItem(TextP("Add Bluetooth Device"),
-//                    { addDevicePopupEnable(); expanded = false })
-            }
             IconButton({
                 SuspendScope {
-                    val file = FileKit.openFileSaver(suggestedName = "findfamily_backup", extension = "db")
-                    file?.let {
+                    FileKit.openFileSaver(suggestedName = "findfamily_backup", extension = "db")?.let {
                         Backup.downloadBackupFile(it)
                     }
                 }
@@ -401,8 +464,7 @@ fun MapView() {
             }
             IconButton({
                 SuspendScope {
-                    val file = FileKit.openFilePicker()
-                    file?.let {
+                    FileKit.openFilePicker()?.let {
                         Backup.restoreBackupFile(it)
                     }
                 }
@@ -417,8 +479,13 @@ fun MapView() {
                 }
         }
         TopAppBar(TextP(selectedObject?.name ?: "Find Family"), Modifier, navIcon, actions)
-    }, sheetPeekHeight = 200.dp) { padding ->
-
+    }, bottomBar = {
+        BottomAppBar(Modifier.height(400.dp)) {
+            Column(Modifier.height(400.dp).verticalScroll(rememberScrollState())) {
+                SheetContent(selectedObject, usersAll, waypoints, devices)
+            }
+        }
+    }) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             val density = LocalDensity.current
             MaplibreMap(Modifier, "https://tiles.openfreemap.org/styles/liberty", 0f..20f,
@@ -426,27 +493,21 @@ fun MapView() {
                 GestureSettings(false,true,false,true),
                 OrnamentSettings.AllDisabled, camera,
                 onMapClick = { _, offset ->
-                    for (user in users) {
-                        if(user.lastLocationValue == null) continue
-                        val center = camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
+                    val coords = (users + waypoints).filter { it.currentPosition() != null }.associateBy { it.currentPosition()!! }
+                    val obj = coords.firstNotNullOfOrNull { (coord, obj) ->
+                        val center = camera.screenLocationFromPosition(coord.toPosition())
                         if((center - offset).getDistance() * density.density < 80) {
-                            selectedObject = user
-                            return@MaplibreMap ClickResult.Pass
-                        }
+                            obj
+                        } else null
                     }
-                    for (waypoint in waypoints) {
-                        val center = camera.screenLocationFromPosition(waypoint.coord.toPosition())
-                        if((center - offset).getDistance() * density.density < 80) {
-                            selectedObject = waypoint
-                            return@MaplibreMap ClickResult.Pass
-                        }
-                    }
+                    if(obj != null)
+                        selectedObject = obj
                     ClickResult.Pass
                 }
             )
-            key(camera.position) {
-                Canvas(Modifier.fillMaxSize()) {
-                    if (initialized) {
+            if(initialized) {
+                key(camera.position) {
+                    Canvas(Modifier.fillMaxSize()) {
                         for (waypoint in waypoints) {
                             val radiusMeters =
                                 if (waypoint.id == selectedObject?.id) currentWaypointRadius else waypoint.range
@@ -454,7 +515,7 @@ fun MapView() {
                                 if (waypoint.id == selectedObject?.id) currentWaypointPosition else waypoint.coord
 
                             val center = camera.screenLocationFromPosition(coord.toPosition())
-                            if (center.x < 0.dp || center.y < 0.dp || center.x > size.toDpSize().width || center.y > size.toDpSize().height) continue
+                            if(center !in size.toDpSize()) continue
                             val circumferenceAtLatitude =
                                 40_075_000 * cos(radians(waypoint.coord.lat))
                             val radiusInDegrees = 360 * radiusMeters / circumferenceAtLatitude
@@ -470,14 +531,12 @@ fun MapView() {
                             )
                         }
                     }
-                }
-                if (initialized) {
                     for (user in users) {
-                        if (user.lastLocationValue == null) continue
+                        if (user.currentPosition() == null) continue
                         val center =
-                            camera.screenLocationFromPosition(user.lastLocationValue!!.coord.toPosition())
+                            camera.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(35.dp, 35.dp)
 
-                        Box(Modifier.offset(center.x-35.dp, center.y-35.dp)) {
+                        Box(Modifier.offset(center.x, center.y)) {
                             UserPicture(user, 70.dp)
                         }
                     }
@@ -486,94 +545,49 @@ fun MapView() {
 
             val obj = selectedObject
             if(obj is User || obj is BluetoothDevice) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
-                    Card(Modifier.fillMaxWidth(0.5f)) {
-                        var isShowingPresent by remember { mutableStateOf(true) }
-                        Box(Modifier.padding(8.dp)) {
-                            OutlinedButton({
-                                isShowingPresent = !isShowingPresent
-                            }, Modifier.fillMaxWidth()) {
-                                Text(if (isShowingPresent) "Show History" else "Show Present")
-                            }
+                Card(Modifier.fillMaxWidth(0.5f).align(Alignment.TopEnd)) {
+                    var isShowingPresent by remember { mutableStateOf(true) }
+                    Box(Modifier.padding(8.dp)) {
+                        OutlinedButton({
+                            isShowingPresent = !isShowingPresent
+                        }, Modifier.fillMaxWidth()) {
+                            Text(if (isShowingPresent) "Show History" else "Show Present")
                         }
-                        if (!isShowingPresent) {
-                            var pickedDate by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds())}
-                            val pickedLocalDate = Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date
-                            var showDialog by remember { mutableStateOf(false) }
-                            OutlinedButton({
-                                // open date picker
-                                showDialog = true
-                            }) {
-                                val datestring = LocalDate.Format {
-                                    monthNumber()
-                                    chars("/")
-                                    day()
-                                    chars("/")
-                                    year()
-                                }.format(pickedLocalDate)
-                                Text(datestring)
-                            }
-                            if(showDialog) {
-                                val datePickerState = rememberDatePickerState(pickedDate)
-                                DatePickerDialog(
-                                    onDismissRequest = {showDialog = false},
-                                    dismissButton = {
-                                        Button({showDialog = false}) {
-                                            Text("Cancel")
-                                        }
-                                    },
-                                    confirmButton = {
-                                        Button({
-                                            showDialog = false
-                                            datePickerState.selectedDateMillis?.let {
-                                                pickedDate = it
-                                            }
-                                        }) {
-                                            Text("Select Date")
-                                        }
-                                    },
-                                ) {
-                                    DatePicker(datePickerState)
-                                }
-                            }
-                            var secondOfDay by remember { mutableStateOf(0.0) }
-                            Slider(
-                                secondOfDay.toFloat(),
-                                { secondOfDay = it.toDouble() },
-                                Modifier.padding(16.dp),
-                                valueRange = 0f..(3600*24f-1)
-                            )
-                            val time = LocalTime.fromSecondOfDay(secondOfDay.toInt())
-                            val simulatedTimestamp = pickedLocalDate.atTime(time).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                    }
+                    if (!isShowingPresent) {
+                        var pickedLocalDate by remember { mutableStateOf(Clock.System.now().toLocalDateTime(
+                            TimeZone.currentSystemDefault()).date) }
+                        DatePickerHelper { pickedLocalDate = it }
+                        var secondOfDay by remember { mutableStateOf(0.0f) }
+                        Slider(
+                            secondOfDay,
+                            { secondOfDay = it },
+                            Modifier.padding(16.dp),
+                            valueRange = 0f..(3600*24f-1)
+                        )
+                        val time = LocalTime.fromSecondOfDay(secondOfDay.toInt())
+                        val simulatedTimestamp = pickedLocalDate.atTime(time).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
-                            var locs by remember { mutableStateOf(locations[obj.id] ?: listOf())}
+                        var locs by remember { mutableStateOf(locations[obj.id] ?: listOf())}
 
-                            LaunchedEffect(Unit) {
-                                locs = platform.database.locationValueDao().getForID(obj.id)
-                            }
-                            if(locs.isNotEmpty()) {
-                                val points = locs.map { it.timestamp to it.coord }
-                                val closest =
-                                    points.minBy { abs(it.first - simulatedTimestamp) }
-                                LaunchedEffect(closest.first) {
-                                    val newZoom = max(camera.position.zoom, 14.0)
-                                    camera.animateTo(
-                                        camera.position.copy(
-                                            target = closest.second.toPosition(),
-                                            zoom = newZoom
-                                        )
+                        LaunchedEffect(Unit) {
+                            locs = platform.database.locationValueDao().getForID(obj.id)
+                        }
+                        if(locs.isNotEmpty()) {
+                            val points = locs.map { it.timestamp to it.coord }
+                            val closest =
+                                points.minBy { abs(it.first - simulatedTimestamp) }
+                            LaunchedEffect(closest.first) {
+                                val newZoom = max(camera.position.zoom, 14.0)
+                                camera.animateTo(
+                                    camera.position.copy(
+                                        target = closest.second.toPosition(),
+                                        zoom = newZoom
                                     )
-                                }
+                                )
                             }
-                            ListItem(TextP(LocalTime.Format {
-                                amPmHour()
-                                chars(":")
-                                minute()
-                                chars(" ")
-                                amPmMarker("am", "pm")
-                            }.format(time)))
-
                         }
+                        ListItem(TextP(time.format(DateFormats.TIME_AM_PM)))
                     }
                 }
             }
@@ -581,11 +595,13 @@ fun MapView() {
     }
 }
 
+private operator fun DpSize.contains(offset: DpOffset): Boolean {
+    return offset.x in 0.dp..width && offset.y in 0.dp..height
+}
+
 private fun DpOffset.getDistance(): Float {
     return sqrt(x.value * x.value + y.value * y.value)
 }
-
-private fun Coord.toPosition() = Position(lon, lat)
 
 @Composable
 fun DialogScope.AddDevicePopup() {
@@ -694,6 +710,8 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
     LaunchedEffect(waypoint) {
         currentWaypointPosition = waypoint.coord
         currentWaypointRadius = waypoint.range
+        editingWaypointName.value = waypoint.name
+        editingWaypointRadius.value = waypoint.range.toString()
     }
 
     LaunchedEffect(camera.position.target.latitude, camera.position.target.longitude) {
@@ -707,37 +725,31 @@ fun WaypointSheetContent(waypoint: Waypoint, users: List<User>) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val waypointNewName = SimpleOutlinedTextField(stringResource(Res.string.saved_place_name), readOnly = !isEditingWaypoint, initial = waypoint.name)
-        val waypointNewRadius = SimpleOutlinedTextField(stringResource(Res.string.saved_place_range), initial = waypoint.range.toString(), suffix = {Text("meters")}, readOnly = !isEditingWaypoint, onChange = {
-            if(it.isPositiveNumber()) {
-                if(it.toDouble() > 1000) {
-                    currentWaypointRadius = 1000.0
-                    return@SimpleOutlinedTextField "1000.0"
-                } else
-                    currentWaypointRadius = it.toDouble()
-            }
-            return@SimpleOutlinedTextField it
-        })
-
-        if(isEditingWaypoint) {
-            OutlinedButton(
-                {
-                    SuspendScope {
-                        platform.database.waypointDao().upsert(
-                            waypoint.copy(
-                                coord = currentWaypointPosition,
-                                name = waypointNewName(),
-                                range = waypointNewRadius().toDouble()
-                            )
-                        )
+        OutlinedTextField(editingWaypointName.value, { editingWaypointName.value = it }, Modifier.fillMaxWidth(), readOnly = !isEditingWaypoint, label = { Text(stringResource(Res.string.saved_place_name)) })
+        OutlinedTextField(
+            editingWaypointRadius.value,
+            {
+                if(it.isPositiveNumber()) {
+                    if(it.toDouble() > 1000) {
+                        currentWaypointRadius = 1000.0
+                        editingWaypointRadius.value = "1000.0"
+                    } else {
+                        currentWaypointRadius = it.toDouble()
                     }
-                    isEditingWaypoint = false
-                },
-                enabled = waypointNewName().isNotEmpty() && waypointNewRadius().isPositiveNumber()
-            ) {
-                Text(stringResource(Res.string.save))
-            }
-        }
+                }
+                editingWaypointRadius.value = it
+            },
+            Modifier.fillMaxWidth(),
+            readOnly = !isEditingWaypoint,
+            label = { Text(stringResource(Res.string.saved_place_range)) },
+            suffix = { Text("meters") },
+            isError = !(editingWaypointRadius.value.isPositiveNumber() && editingWaypointRadius.value.toDouble() <= 1000),
+            supportingText = if(!editingWaypointRadius.value.isPositiveNumber()) {
+                { Text("Range must be a positive number") }
+            } else if(editingWaypointRadius.value.toDouble() > 1000) {
+                { Text("Range must be less than 1000 meters") }
+            } else null
+        )
 
         if(!isEditingWaypoint)
             Card() {
@@ -893,18 +905,9 @@ fun DialogScope.AddPersonPopup(users: List<User>) {
         else
             Card {
                 ListItem(
-                    leadingContent = {
-                        Box(
-                            Modifier.clip(CircleShape).size(50.dp).border(
-                                2.dp,
-                                MaterialTheme.colorScheme.primary,
-                                CircleShape
-                            ).background(Color.Green)
-                        )
-                    },
+                    leadingContent = { GreenCircle(50.dp) },
                     headlineContent = {
-                        Text(
-                            stringResource(Res.string.tap_pick_contact),
+                        Text(stringResource(Res.string.tap_pick_contact),
                             fontWeight = FontWeight.Bold
                         )
                     })
@@ -962,6 +965,7 @@ fun DialogScope.AddPersonPopup(users: List<User>) {
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun DialogScope.AddPersonPopupTemporary() {
@@ -975,34 +979,16 @@ fun DialogScope.AddPersonPopupTemporary() {
     Spacer(Modifier.height(4.dp))
     val contactName = SimpleOutlinedTextField(stringResource(Res.string.temporary_link_name))
     Spacer(Modifier.width(16.dp))
-    Column {
-        var expanded by remember { mutableStateOf(false) }
-        OutlinedTextField(expiryTime, {}, Modifier.clickable { expanded = true }, readOnly = true, enabled = false, label = TextP(
-            stringResource(Res.string.temporary_link_expiry)
-        ),
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(
-                    expanded = expanded
-                )
-            },
-            colors = OutlinedTextFieldDefaults.colors().copy(
-                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                disabledIndicatorColor = MaterialTheme.colorScheme.outline,
-                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                //For Icons
-                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant)
-        )
-        DropdownMenu(expanded, { expanded = false }) {
-            listOf("15 $minutes_str", "30 $minutes_str", "1 $hour_str", "2 $hours_str", "6 $hours_str", "12 $hours_str", "24 $hours_str").forEach { selectionOption ->
-                DropdownMenuItem(TextP(text = selectionOption), {
-                    expiryTime = selectionOption
-                    expanded = false
-                })
-            }
-        }
-    }
+    val options = mapOf(
+        "15 $minutes_str" to 15.minutes,
+        "30 $minutes_str" to 30.minutes,
+        "1 $hour_str" to 1.hours,
+        "2 $hours_str" to 2.hours,
+        "6 $hours_str" to 6.hours,
+        "12 $hours_str" to 12.hours,
+        "24  $hours_str" to 1.days
+    )
+    DropdownField(expiryTime, { expiryTime = it }, options.keys)
 
     OutlinedButton({
         SuspendScope {
@@ -1011,16 +997,7 @@ fun DialogScope.AddPersonPopupTemporary() {
             val newUser = User(Random.nextULong(), contactName(), null,
                 keypair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM).encodeBase64(),
                 true, RequestStatus.MUTUAL_CONNECTION, null, null,
-                deleteAt = Clock.System.now() + when (expiryTime) {
-                        "15 $minutes_str" -> 15.minutes
-                        "30 $minutes_str" -> 30.minutes
-                        "1 $hour_str" -> 1.hours
-                        "2 $hours_str" -> 2.hours
-                        "6 $hours_str" -> 6.hours
-                        "12 $hours_str" -> 12.hours
-                        "24  $hours_str" -> 1.days
-                        else -> throw IllegalStateException("Invalid expiry time for location sharing")
-                    },
+                deleteAt = Clock.System.now() + options[expiryTime]!!,
                 encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
             )
             platform.database.usersDao().upsert(newUser)
@@ -1028,13 +1005,6 @@ fun DialogScope.AddPersonPopupTemporary() {
         } }, Modifier,contactName().isNotEmpty() && expiryTime.isNotEmpty()) {
         Text(stringResource(Res.string.temporary_link_submit))
     }
-}
-
-@Composable
-fun SimpleOutlinedTextField(label: String, initial: String = "", suffix: @Composable (() -> Unit)? = null, readOnly: Boolean = false, onChange: (String) -> String? = {null}, isError: (String) -> Boolean = {false}, subtext: (String) -> String? = {null}): ()->String {
-    var text by remember { mutableStateOf(initial) }
-    OutlinedTextField(text, { text = it; text = onChange(it)?:text }, label = { Text(label) }, suffix = suffix, readOnly = readOnly, isError = isError(text), supportingText = {subtext(text)?.let { Text(it) }})
-    return { text }
 }
 
 @Composable

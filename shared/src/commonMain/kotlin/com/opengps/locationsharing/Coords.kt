@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import io.github.dellisd.spatialk.geojson.Position
 import kotlinx.serialization.Serializable
 import kotlin.math.asin
 import kotlin.math.atan2
@@ -9,37 +10,10 @@ import kotlin.math.ln
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-
 @Serializable
 data class Coord(val lat: Double, val lon: Double)
 
-fun doProjection(coord: Coord): Pair<Double, Double> {
-    val num = coord.lon * 0.017453292519943295 // 2*pi / 360
-    val X = 6378137.0 * num
-    val a = coord.lat * 0.017453292519943295
-    val Y = 3189068.5 * ln((1.0 + sin(a)) / (1.0 - sin(a)))
-    return Pair(normalize(X, min = X0, max = -X0), normalize(Y, min = -X0, max = X0))
-}
-
-fun doInverseProjection(x: Double, y: Double): Coord {
-    val X = inverseNormalize(x, min = X0, max = -X0)
-    val Y = inverseNormalize(y, min = -X0, max = X0)
-    val a = asin((exp(Y/3189068.5) - 1)/(exp(Y/3189068.5) + 1))
-    val num = X / 6378137.0
-    val lon = num / 0.017453292519943295
-    val lat = a / 0.017453292519943295
-    return Coord(lat, lon)
-}
-
-private fun inverseNormalize(res: Double, min: Double, max: Double): Double {
-    return res * (max - min) + min
-}
-
-private fun normalize(t: Double, min: Double, max: Double): Double {
-    return (t - min) / (max - min)
-}
-
-private const val X0 = -2.0037508342789248E7
+fun Coord.toPosition() = Position(lon, lat)
 
 fun havershine(p1: Coord, p2: Coord): Double {
     val R = 6371000 // Radius of the earth in m

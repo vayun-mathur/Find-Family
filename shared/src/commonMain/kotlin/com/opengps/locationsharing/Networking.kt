@@ -30,10 +30,6 @@ class Networking {
             install(ContentNegotiation) {
                 json()
             }
-            engine {
-                //TODO: re-enable tor eventually
-                //proxy = ProxyBuilder.socks("localhost", 42997)
-            }
         }
         private val crypto = CryptographyProvider.Default.get(RSA.OAEP)
         private var publickey: RSA.OAEP.PublicKey? = null
@@ -88,23 +84,25 @@ class Networking {
             }
         }
 
+        private suspend inline fun <reified T, reified I> makeRequest(path: String, body: I): T? {
+            return checkNetworkDown {
+                val response = client.post("${getUrl()}$path") {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+                if(response.status != HttpStatusCode.OK) return@checkNetworkDown null
+                val result = response.body<T>()
+                return@checkNetworkDown result
+            }
+        }
+
         private suspend fun register(): Boolean {
             @Serializable
             data class Register(val userid: ULong, val key: String)
-            return checkNetworkDown {
-                val response = client.post("${getUrl()}/api/register") {
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        Register(
-                            userid!!,
-                            publickey!!.encodeToByteArray(RSA.PublicKey.Format.PEM)
-                                .encodeBase64()
-                        )
-                    )
-                }
-                val result = response.body<Boolean>()
-                return@checkNetworkDown result
-            } ?: false
+            return makeRequest("/api/register", Register(
+                userid!!,
+                publickey!!.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64())
+            ) ?: false
         }
 
         suspend fun ensureUserExists() {
@@ -127,56 +125,29 @@ class Networking {
         }
 
         suspend fun publishLocation(location: LocationValue, user: User): Boolean {
-            return checkNetworkDown {
-                val key = if(user.encryptionKey != null) {
-                    crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, user.encryptionKey!!.decodeBase64Bytes())
-                } else {
-                    getKey(user.id)?.also {
-                        platform.database.usersDao().upsert(user.copy(
-                            encryptionKey = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
-                        ))
-                    }
-                } ?: return@checkNetworkDown false
-                client.post("${getUrl()}/api/location/publish") {
-                    contentType(ContentType.Application.Json)
-                    setBody(encryptLocation(location, user.id, key))
+            val key = if(user.encryptionKey != null) {
+                crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, user.encryptionKey!!.decodeBase64Bytes())
+            } else {
+                getKey(user.id)?.also {
+                    platform.database.usersDao().upsert(user.copy(
+                        encryptionKey = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
+                    ))
                 }
-                return@checkNetworkDown true
-            } ?: false
+            } ?: return false
+            return makeRequest("/api/location/publish", encryptLocation(location, user.id, key)) ?: false
         }
 
         suspend fun receiveLocations(): List<LocationValue>? {
-            return checkNetworkDown {
-                val response = client.post("${getUrl()}/api/location/receive") {
-                    contentType(ContentType.Application.Json)
-                    setBody("{\"userid\": $userid}")
-                }
-                if(response.status != HttpStatusCode.OK) return@checkNetworkDown null
-                val locationsEncrypted = response.body<List<String>>()
-                val locations = locationsEncrypted.map { decryptLocation(it) }
-                return@checkNetworkDown locations
-            }
+            val strings: List<String> = makeRequest("/api/location/receive", "{\"userid\": $userid}") ?: return null
+            return strings.map { decryptLocation(it) }
         }
 
         suspend fun sendLocationRequest(requested: ULong): Boolean {
-            return checkNetworkDown {
-                val response = client.post("${getUrl()}/api/request_sharing/request") {
-                    contentType(ContentType.Application.Json)
-                    setBody("{\"requester\": \"${userid!!.encodeBase26()}\", \"requested\": \"${requested.encodeBase26()}\"}")
-                }
-                return@checkNetworkDown response.status == HttpStatusCode.OK
-            } ?: false
+            return makeRequest("/api/request_sharing/send", "{\"requester\": $userid, \"requested\": $requested}") ?: false
         }
 
         suspend fun retrieveRequestsOfMe(): List<String> {
-            return checkNetworkDown {
-                val response = client.post("${getUrl()}/api/request_sharing/retrieve") {
-                    contentType(ContentType.Application.Json)
-                    setBody("{\"requested\": \"${userid!!.encodeBase26()}\"}")
-                }
-                if(response.status != HttpStatusCode.OK) return@checkNetworkDown listOf()
-                return@checkNetworkDown response.body<List<String>>()
-            } ?: listOf()
+            return makeRequest("/api/request_sharing/retrieve", "{\"requester\": $userid}") ?: listOf()
         }
 
         private suspend fun encryptLocation(location: LocationValue, recipientUserID: ULong, key: RSA.OAEP.PublicKey): LocationSharingData {

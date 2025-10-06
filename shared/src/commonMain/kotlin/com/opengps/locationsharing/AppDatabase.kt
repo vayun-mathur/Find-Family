@@ -29,6 +29,8 @@ import kotlin.time.Instant
 interface ObjectParent {
     val id: ULong
     val name: String
+
+    fun currentPosition(): Coord?
 }
 
 @Entity
@@ -50,7 +52,9 @@ data class BluetoothDevice(
     override val id: ULong = 0uL,
     override val name: String,
     val lastLocationValue: LocationValue? = null,
-): ObjectParent
+): ObjectParent {
+    override fun currentPosition() = lastLocationValue?.coord
+}
 
 @Serializable
 enum class RequestStatus {
@@ -84,7 +88,9 @@ data class User(
     @Serializable(with = InstantSerializer::class)
     var deleteAt: Instant? = null,
     var encryptionKey: String? = null,
-): ObjectParent
+): ObjectParent {
+    override fun currentPosition() = lastLocationValue?.coord
+}
 
 @Entity
 @Serializable
@@ -94,7 +100,9 @@ data class Waypoint(
     val range: Double,
     val coord: Coord,
     val usersInactive: MutableList<ULong>
-): ObjectParent
+): ObjectParent {
+    override fun currentPosition() = coord
+}
 
 @Dao
 interface WaypointDao {
