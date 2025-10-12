@@ -129,9 +129,10 @@ class Networking {
                 crypto.publicKeyDecoder(SHA512).decodeFromByteArray(RSA.PublicKey.Format.PEM, user.encryptionKey!!.decodeBase64Bytes())
             } else {
                 getKey(user.id)?.also {
-                    platform.database.usersDao().upsert(user.copy(
-                        encryptionKey = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
-                    ))
+                    val keyString = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
+                    UsersCached.updateByID(user.id) { user ->
+                        user.copy(encryptionKey = keyString)
+                    }
                 }
             } ?: return false
             return makeRequest("/api/location/publish", encryptLocation(location, user.id, key)) ?: false

@@ -145,6 +145,45 @@ interface UsersDao {
     }
 }
 
+object UsersCached {
+    private var usersMap: Map<ULong, User> = mapOf()
+    private val users: List<User> get() = usersMap.values.toList()
+    suspend fun init() {
+        usersMap = platform.database.usersDao().getAll().associateBy { it.id }
+    }
+    suspend fun save() {
+        platform.database.usersDao().setAll(users)
+    }
+
+    fun getAll() = users
+    fun filter(predicate: (User) -> Boolean) {
+        usersMap = usersMap.filter({ predicate(it.value) })
+    }
+    fun updateByID(id: ULong, update: (User) -> User) {
+        usersMap = usersMap + (id to update(usersMap[id]!!))
+    }
+    fun getByID(id: ULong) = usersMap[id]
+    fun upsert(user: User) {
+        usersMap = usersMap + (user.id to user)
+    }
+    fun delete(user: User) {
+        usersMap = usersMap - user.id
+    }
+    fun delete(id: ULong) {
+        usersMap = usersMap - id
+    }
+    fun clear() {
+        usersMap = mapOf()
+    }
+    fun insertAll(users: List<User>) {
+        this.usersMap = this.usersMap + users.associateBy { it.id }
+    }
+    fun setAll(users: List<User>) {
+        clear()
+        insertAll(users)
+    }
+}
+
 @Dao
 interface LocationValueDao {
     @Query("SELECT * FROM LocationValue")

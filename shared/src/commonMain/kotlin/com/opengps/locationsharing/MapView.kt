@@ -334,7 +334,6 @@ fun MapView() {
         }
     }
 
-    val usersDao = platform.database.usersDao()
     val waypointDao = platform.database.waypointDao()
     val bluetoothDao = platform.database.bluetoothDeviceDao()
 
@@ -344,22 +343,23 @@ fun MapView() {
     val users by remember { derivedStateOf { usersAll.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION } } }
     val devices by remember { derivedStateOf { objects.values.filterIsInstance<BluetoothDevice>() } }
 
-    addPersonPopupEnable = BasicDialog { AddPersonPopup(usersAll) }
+    addPersonPopupEnable = BasicDialog { AddPersonPopup() }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
     val addDevicePopupEnable = BasicDialog { AddDevicePopup() }
 
     LaunchedEffect(Unit) {
         SuspendScope {
-            objects = (waypointDao.getAll() + usersDao.getAll() + bluetoothDao.getAll()).associateBy { it.id }
+            UsersCached.init()
+            objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
             while(Networking.userid == null) { delay(500) }
             if(users.isEmpty()) {
                 val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, RequestStatus.MUTUAL_CONNECTION, null, null)
-                usersDao.upsert(newUser)
+                UsersCached.upsert(newUser)
                 objects = objects + (newUser.id to newUser)
             }
 
             while(true) {
-                objects = (waypointDao.getAll() + usersDao.getAll() + bluetoothDao.getAll()).associateBy { it.id }
+                objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
                 selectedObject = objects[selectedObject?.id]
                 delay(1000)
             }
@@ -442,7 +442,7 @@ fun MapView() {
                 IconButton({
                     SuspendScope {
                         when (obj) {
-                            is User -> usersDao.delete(obj)
+                            is User -> UsersCached.delete(obj)
                             is Waypoint -> waypointDao.delete(obj)
                             is BluetoothDevice -> bluetoothDao.delete(obj)
                         }
@@ -482,7 +482,7 @@ fun MapView() {
     }, bottomBar = {
         BottomAppBar(Modifier.height(400.dp)) {
             Column(Modifier.height(400.dp).verticalScroll(rememberScrollState())) {
-                SheetContent(selectedObject, usersAll, waypoints, devices) {objects = objects - it.id + (it.id to it)}
+                SheetContent(selectedObject, usersAll, waypoints, devices)
             }
         }
     }) { padding ->
@@ -660,12 +660,11 @@ fun BasicDialog(dismiss: () -> Unit = {}, content: @Composable DialogScope.() ->
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun UserSheetContent(user: User, updateUser: (User) -> Unit) {
-    val usersDao = platform.database.usersDao()
+fun UserSheetContent(user: User) {
 
     val requestPickContact1 = platform.requestPickContact { name, photo ->
         SuspendScope {
-            usersDao.upsert(user.copy(name = name, photo = photo))
+            UsersCached.upsert(user.copy(name = name, photo = photo))
         }
     }
     UserCard(user, true)
@@ -683,7 +682,7 @@ fun UserSheetContent(user: User, updateUser: (User) -> Unit) {
                         user.send,
                         { send ->
                             SuspendScope {
-                                usersDao.upsert(user.copy(send = send))
+                                UsersCached.upsert(user.copy(send = send))
                             }
                         })
                 }
@@ -793,7 +792,7 @@ fun UserAwaitingRequest(user: User) {
                 }) { TextP("Accept")() }
                 OutlinedButton({
                     SuspendScope {
-                        platform.database.usersDao().delete(user)
+                        UsersCached.delete(user.id)
                     }
                 }) { TextP("Deny")() }
             }
@@ -812,7 +811,7 @@ fun UserAwaitingResponse(user: User) {
             headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) }, trailingContent = {
                 IconButton({
                     SuspendScope {
-                        platform.database.usersDao().delete(user)
+                        UsersCached.delete(user.id)
                     }
                 }) {
                     Icon(Icons.Default.Delete, null)
@@ -823,11 +822,11 @@ fun UserAwaitingResponse(user: User) {
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SheetContent(selectedObject: ObjectParent?, usersAll: List<User>, waypoints: List<Waypoint>, devices: List<BluetoothDevice>, updateUser: (User) -> Unit) {
+fun SheetContent(selectedObject: ObjectParent?, usersAll: List<User>, waypoints: List<Waypoint>, devices: List<BluetoothDevice>) {
     val users = usersAll.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }
     when(selectedObject) {
         is BluetoothDevice -> DeviceSheetContent(selectedObject)
-        is User -> UserSheetContent(selectedObject, updateUser)
+        is User -> UserSheetContent(selectedObject)
         is Waypoint -> WaypointSheetContent(selectedObject, users)
         else -> {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -878,10 +877,7 @@ var AddPersonPopupInitial: ULong? = null
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun DialogScope.AddPersonPopup(users: List<User>) {
-    val usersAwaitingRequest = users.filter { it.requestStatus == RequestStatus.AWAITING_REQUEST }.map { it.id }
-    val usersAlreadySharing = users.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }.map { it.id }
-    val usersAwaitingResponse = users.filter { it.requestStatus == RequestStatus.AWAITING_RESPONSE }.map { it.id }
+fun DialogScope.AddPersonPopup() {
     var contactName by remember { mutableStateOf("") }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->
@@ -913,12 +909,13 @@ fun DialogScope.AddPersonPopup(users: List<User>) {
                     })
             }
     }
-    val recipientID = SimpleOutlinedTextField(stringResource(Res.string.contact_findfamily_id), initial = AddPersonPopupInitial?.encodeBase26()?:"", isError = { it.decodeBase26() in (usersAlreadySharing + usersAwaitingResponse) }, subtext = {
-        when(it.decodeBase26()) {
-            Networking.userid -> "Cannot share your location with yourself"
-            in usersAlreadySharing -> "Already sharing with this person"
-            in usersAwaitingResponse -> "Already requested to share with this person"
-            in usersAwaitingRequest -> "This person has requested your location"
+    val recipientID = SimpleOutlinedTextField(stringResource(Res.string.contact_findfamily_id), initial = AddPersonPopupInitial?.encodeBase26()?:"", isError = { UsersCached.getByID(it.decodeBase26())?.requestStatus in listOf(
+        RequestStatus.AWAITING_RESPONSE, RequestStatus.MUTUAL_CONNECTION) }, subtext = {
+        if(it.decodeBase26() == Networking.userid) "Cannot share your location with yourself"
+        else when(UsersCached.getByID(it.decodeBase26())?.requestStatus) {
+            RequestStatus.MUTUAL_CONNECTION -> "Already sharing with this person"
+            RequestStatus.AWAITING_RESPONSE -> "Already requested to share with this person"
+            RequestStatus.AWAITING_REQUEST -> "This person has requested your location"
             else -> null
         }
     }, readOnly = AddPersonPopupInitial != null)
@@ -936,7 +933,7 @@ fun DialogScope.AddPersonPopup(users: List<User>) {
         SuspendScope {
             val trueID = recipientID().decodeBase26()
             checkSharingRequests()
-            val requestStatus = if(usersAwaitingRequest.contains(trueID)) {
+            val requestStatus = if(UsersCached.getByID(trueID)?.requestStatus == RequestStatus.AWAITING_REQUEST) {
                 checkSharingRequests()
                 RequestStatus.MUTUAL_CONNECTION
             } else {
@@ -953,12 +950,13 @@ fun DialogScope.AddPersonPopup(users: List<User>) {
                 null,
                 null,
             )
-            platform.database.usersDao().upsert(newUser)
+            UsersCached.upsert(newUser)
             close()
         }
-    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty() && recipientID().decodeBase26() !in (usersAlreadySharing + usersAwaitingResponse)
+    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty() && UsersCached.getByID(recipientID().decodeBase26())?.requestStatus !in listOf(
+        RequestStatus.AWAITING_RESPONSE, RequestStatus.MUTUAL_CONNECTION)
     ) {
-        if(recipientID().decodeBase26() in usersAwaitingResponse) {
+        if(UsersCached.getByID(recipientID().decodeBase26())?.requestStatus == RequestStatus.AWAITING_RESPONSE) {
             Text(stringResource(Res.string.accept_start_sharing))
         } else {
             Text(stringResource(Res.string.request_start_sharing))
@@ -1000,7 +998,7 @@ fun DialogScope.AddPersonPopupTemporary() {
                 deleteAt = Clock.System.now() + options[expiryTime]!!,
                 encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
             )
-            platform.database.usersDao().upsert(newUser)
+            UsersCached.upsert(newUser)
             close()
         } }, Modifier,contactName().isNotEmpty() && expiryTime.isNotEmpty()) {
         Text(stringResource(Res.string.temporary_link_submit))
