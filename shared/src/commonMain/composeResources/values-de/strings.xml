@@ -11,8 +11,8 @@
     <string name="connect_bluetooth_device_description">Geräte müssen Verbunden sein um hier zu erscheinen</string>
     <string name="show_on_map">Auf der Karte zeigen</string>
     <string name="share_your_location">Deinen Standort teilen</string>
-    <string name="change_connected_contact">Change  connect contact</string>
-    <string name="time_remaining">Zeit verbleibenden</string>
+    <string name="change_connected_contact">Ändere verbundenen Kontakt</string>
+    <string name="time_remaining">verbliebene Zeit</string>
     <string name="hour">Stunde</string>
     <string name="hours">Stunden</string>
     <string name="minutes">Minuten</string>
@@ -22,13 +22,13 @@
     <string name="saved_place_notification">Gespeicherter Ort Betreten/Verlassen Benachrichtigung</string>
     <string name="tap_pick_contact">Tippen um einen Kontakt auszuwählen</string>
     <string name="contact_findfamily_id">FindFamily ID des Kontakts</string>
-    <string name="contact_findfamily_id_desc">Teile deine FindFamily ID with your contact, then enter their ID here</string>
-    <string name="copy_findfamily_id">Copy Your FindFamily ID</string>
-    <string name="unnamed_location">Unnamed Location</string>
-    <string name="request_start_sharing">Request Location Sharing</string>
+    <string name="contact_findfamily_id_desc">Teile deine FindFamily ID mit deinem Kontakt, then enter their ID here</string>
+    <string name="copy_findfamily_id">Deine FindFamily ID kopieren</string>
+    <string name="unnamed_location">Ort ohne Name</string>
+    <string name="request_start_sharing">Teilen des Standorts anfragen</string>
     <string name="accept_start_sharing">Start Location Sharing</string>
-    <string name="temporary_link_title">Temporary FindFamily Link</string>
-    <string name="temporary_link_name">Name this Link</string>
-    <string name="temporary_link_expiry">Link Expiry in</string>
-    <string name="temporary_link_submit">Create Temporary Sharing Link</string>
+    <string name="temporary_link_title">Temporärer FindFamily Link</string>
+    <string name="temporary_link_name">Diesen Link benennen</string>
+    <string name="temporary_link_expiry">Link erlischt in</string>
+    <string name="temporary_link_submit">Temporärer Teil Link erstellen</string>
 </reresources
