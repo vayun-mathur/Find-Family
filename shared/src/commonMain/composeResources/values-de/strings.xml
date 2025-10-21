@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_person">Person hinzufügen</string>
+    <string name="create_sharable_link">Teilen-Link erstellen</string>
+    <string name="add_saved_location">Gespeicherten Ort hinzufügen</string>
+    <string name="new_saved_place">Neuer gespeicherter Ort</string>
+    <string name="showing">Anzeigen:</string>
+    <string name="present">Aktuell</string>
+    <string name="past">Vergangenheit</string>
+    <string name="connect_bluetooth_device">Bluetooth-Gerät verbinden</string>
+    <string name="connect_bluetooth_device_description">Die Geräte müssen mit deinem Telefon gekoppelt werden, bevor sie hier angezeigt werden.</string>
+    <string name="show_on_map">Auf Karte anzeigen</string>
+    <string name="share_your_location">Teile deinen Standort</string>
+    <string name="change_connected_contact">Verbundenen Kontakt ändern</string>
+    <string name="time_remaining">Verbleibende Zeit</string>
+    <string name="hour">Stunde</string>
+    <string name="hours">Stunden</string>
+    <string name="minutes">Minuten</string>
+    <string name="saved_place_name">Name des gespeicherten Ortes</string>
+    <string name="saved_place_range">Reichweite des gespeicherten Ortes (Radius)</string>
+    <string name="save">Speichern</string>
+    <string name="saved_place_notification">Benachrichtigungen für Betreten/Verlassen eines gespeicherten Ortes</string>
+    <string name="tap_pick_contact">Tippen, um einen Kontakt auszuwählen</string>
+    <string name="contact_findfamily_id">FindFamily-ID des Kontakts</string>
+    <string name="contact_findfamily_id_desc">Teile deine FindFamily-ID mit einem Kontakt und geben dann deren ID hier ein</string>
+    <string name="copy_findfamily_id">Deine FindFamily-ID kopieren</string>
+    <string name="unnamed_location">Unbenannter Ort</string>
+    <string name="request_start_sharing">Standortfreigabe anfordern</string>
+    <string name="accept_start_sharing">Standortfreigabe starten</string>
+    <string name="temporary_link_title">Vorübergehender FindFamily-Link</string>
+    <string name="temporary_link_name">Gebe diesem Link einen Namen</string>
+    <string name="temporary_link_expiry">Link läuft ab in</string>
+    <string name="temporary_link_submit">Vorübergehenden Freigabelink erstellen</string>
+</resources>
