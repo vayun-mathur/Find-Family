@@ -13,8 +13,8 @@ android {
         applicationId = "cc.findfamily.app"
         minSdk = 31
         targetSdk = 36
-        versionCode = 10
-        versionName = "v1.9"
+        versionCode = 11
+        versionName = "v1.10"
     }
     buildFeatures {
         compose = true
