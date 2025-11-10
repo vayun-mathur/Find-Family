@@ -49,7 +49,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -124,10 +123,7 @@ import location_sharing.shared.generated.resources.unnamed_location
 import org.jetbrains.compose.resources.stringResource
 import org.maplibre.compose.camera.CameraState
 import org.maplibre.compose.camera.rememberCameraState
-import org.maplibre.compose.map.GestureOptions
-import org.maplibre.compose.map.MapOptions
 import org.maplibre.compose.map.MaplibreMap
-import org.maplibre.compose.map.OrnamentOptions
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.util.ClickResult
 import kotlin.math.abs
@@ -564,50 +560,98 @@ fun MapView() {
             }
 
             if(obj is User || obj is BluetoothDevice) {
-                Card(Modifier.fillMaxWidth(0.5f).align(Alignment.TopEnd)) {
-                    var isShowingPresent by remember { mutableStateOf(true) }
-                    Box(Modifier.padding(8.dp)) {
-                        OutlinedButton({
-                            isShowingPresent = !isShowingPresent
-                        }, Modifier.fillMaxWidth()) {
-                            Text(if (isShowingPresent) "Show History" else "Show Present")
-                        }
-                    }
-                    if (!isShowingPresent) {
-                        var pickedLocalDate by remember { mutableStateOf(Clock.System.now().toLocalDateTime(
-                            TimeZone.currentSystemDefault()).date) }
-                        DatePickerHelper { pickedLocalDate = it }
-                        var secondOfDay by remember { mutableStateOf(0.0f) }
-                        Slider(
-                            secondOfDay,
-                            { secondOfDay = it },
-                            Modifier.padding(16.dp),
-                            valueRange = 0f..(3600*24f-1)
-                        )
-                        val time = LocalTime.fromSecondOfDay(secondOfDay.toInt())
-                        val simulatedTimestamp = pickedLocalDate.atTime(time).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
-
-                        var locs by remember { mutableStateOf(locations[obj.id] ?: listOf())}
-
-                        LaunchedEffect(Unit) {
-                            locs = platform.database.locationValueDao().getForID(obj.id)
-                        }
-                        if(locs.isNotEmpty()) {
-                            val points = locs.map { it.timestamp to it.coord }
-                            val closest =
-                                points.minBy { abs(it.first - simulatedTimestamp) }
-                            selectedObjectPosition = closest.second.toPosition()
-                            LaunchedEffect(closest.first) {
-                                val newZoom = max(camera.position.zoom, 14.0)
-                                camera.animateTo(
-                                    camera.position.copy(
-                                        target = closest.second.toPosition(),
-                                        zoom = newZoom
-                                    )
+                var isShowingPresent by remember { mutableStateOf(true) }
+                Card(Modifier.width(100.dp).align(Alignment.BottomEnd)) {
+                    val colmod = if(isShowingPresent) Modifier else Modifier.fillMaxHeight(1f)
+                    Column(colmod.padding(4.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (!isShowingPresent) {
+                            var pickedLocalDate by remember {
+                                mutableStateOf(
+                                    Clock.System.now().toLocalDateTime(
+                                        TimeZone.currentSystemDefault()
+                                    ).date
                                 )
                             }
+                            var timeOfDay by remember { mutableStateOf(Clock.System.now().toLocalDateTime(
+                                TimeZone.currentSystemDefault()
+                            ).time.toSecondOfDay()) }
+                            val pickedLocalTime by remember { derivedStateOf {
+                                LocalTime.fromSecondOfDay(timeOfDay)
+                            } }
+                            Box(Modifier.weight(1f)) {
+                                VerticalSlider(
+                                    timeOfDay.toFloat(),
+                                    { timeOfDay = it.toInt() },
+                                    valueRange = 0.0f..24f*60f*60f
+                                )
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                IconButton({
+                                    timeOfDay -= 5*60
+                                }) {
+                                    Text("<<<")
+                                }
+                                IconButton({
+                                    timeOfDay += 5*60
+                                }) {
+                                    Text(">>>")
+                                }
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                IconButton({
+                                    timeOfDay -= 60
+                                }) {
+                                    Text("<<")
+                                }
+                                IconButton({
+                                    timeOfDay += 60
+                                }) {
+                                    Text(">>")
+                                }
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                IconButton({
+                                    timeOfDay -= 10
+                                }) {
+                                    Text("<")
+                                }
+                                IconButton({
+                                    timeOfDay += 10
+                                }) {
+                                    Text(">")
+                                }
+                            }
+                            Text(pickedLocalTime.format(DateFormats.TIME_SECOND_AM_PM), fontSize = 11.sp)
+                            DatePickerHelper(pickedLocalDate) { pickedLocalDate = it }
+                            val simulatedTimestamp = pickedLocalDate.atTime(pickedLocalTime)
+                                .toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+
+                            var locs by remember { mutableStateOf(locations[obj.id] ?: listOf()) }
+
+                            LaunchedEffect(Unit) {
+                                locs = platform.database.locationValueDao().getForID(obj.id)
+                            }
+                            if (locs.isNotEmpty()) {
+                                val points = locs.map { it.timestamp to it.coord }
+                                val closest =
+                                    points.minBy { abs(it.first - simulatedTimestamp) }
+                                selectedObjectPosition = closest.second.toPosition()
+                                LaunchedEffect(closest.first) {
+                                    val newZoom = max(camera.position.zoom, 14.0)
+                                    camera.animateTo(
+                                        camera.position.copy(
+                                            target = closest.second.toPosition(),
+                                            zoom = newZoom
+                                        )
+                                    )
+                                }
+                            }
                         }
-                        ListItem(TextP(time.format(DateFormats.TIME_AM_PM)))
+                        OutlinedButton({
+                            isShowingPresent = !isShowingPresent
+                        }, Modifier.fillMaxWidth(1f)) {
+                            Text(if (isShowingPresent) "History" else "Hide", fontSize = 11.sp)
+                        }
                     }
                 }
             }

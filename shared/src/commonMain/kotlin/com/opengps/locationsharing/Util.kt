@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,17 +38,19 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
 import kotlinx.datetime.format
 import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import location_sharing.shared.generated.resources.Res
 import location_sharing.shared.generated.resources.temporary_link_expiry
 import org.jetbrains.compose.resources.stringResource
-import kotlin.time.Clock
-import kotlin.time.Instant
 import kotlin.math.PI
 import kotlin.math.pow
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 fun radians(degrees: Double) = degrees * PI / 180
 
@@ -121,12 +125,22 @@ object DateFormats {
         chars(" ")
         amPmMarker("am", "pm")
     }
+    // example: 10:05 am
+    val TIME_SECOND_AM_PM = LocalTime.Format {
+        amPmHour()
+        chars(":")
+        minute()
+        chars(":")
+        second()
+        chars(" ")
+        amPmMarker("AM", "PM")
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DatePickerHelper(onDatePicked: (LocalDate) -> Unit) {
-    var pickedDate by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds())}
+fun DatePickerHelper(localDate: LocalDate, onDatePicked: (LocalDate) -> Unit) {
+    var pickedDate by remember { mutableStateOf(localDate.atTime(0, 0, 0).toInstant(TimeZone.UTC).toEpochMilliseconds())}
     val pickedLocalDate by remember { derivedStateOf { Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date } }
     LaunchedEffect(pickedLocalDate) {
         onDatePicked(pickedLocalDate)
@@ -160,6 +174,49 @@ fun DatePickerHelper(onDatePicked: (LocalDate) -> Unit) {
             DatePicker(datePickerState)
         }
     }
+}
+
+@Composable
+fun VerticalSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f
+) {
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        enabled = enabled,
+        valueRange = valueRange,
+        modifier = modifier
+            .layout { measurable, constraints ->
+                // 1. Measure the slider horizontally, but swap width and height constraints.
+                // The slider's "width" will be constrained by the layout's "maxHeight".
+                val placeable = measurable.measure(
+                    constraints.copy(
+                        minWidth = constraints.minHeight,
+                        maxWidth = constraints.maxHeight,
+                        minHeight = constraints.minWidth,
+                        maxHeight = constraints.maxWidth,
+                    )
+                )
+
+                // 2. The layout's dimensions are now swapped.
+                // The layout's "width" is the slider's "height".
+                // The layout's "height" is the slider's "width".
+                layout(placeable.height, placeable.width) {
+                    // 3. Place the slider, rotating it -90 degrees.
+                    // We must also translate it to account for the rotation.
+                    placeable.placeRelativeWithLayer(
+                        x = -(placeable.width / 2 - placeable.height / 2),
+                        y = -(placeable.height / 2 - placeable.width / 2),
+                    ) {
+                        rotationZ = -90f
+                    }
+                }
+            }
+    )
 }
 
 @Composable
