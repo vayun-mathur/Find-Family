@@ -34,9 +34,11 @@ suspend fun checkSharingRequests() {
 
 @OptIn(ExperimentalTime::class)
 private suspend fun locationBackend(locationValue: LocationValue) {
-    println("updated location")
+    println("updated location 1")
     if(locations.isEmpty()) {
+        UsersCached.init()
         locations = platform.database.locationValueDao().getSince((Clock.System.now() - 2.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
+        println("got locations")
     }
 
     checkSharingRequests()
