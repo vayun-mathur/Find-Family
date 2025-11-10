@@ -7,18 +7,18 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.cinterop.ExperimentalForeignApi
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.OrnamentOptions
 import platform.Contacts.CNContact
 import platform.ContactsUI.CNContactPickerDelegateProtocol
 import platform.ContactsUI.CNContactPickerViewController
 import platform.CoreBluetooth.CBCentralManager
 import platform.CoreBluetooth.CBCentralManagerDelegateProtocol
 import platform.CoreBluetooth.CBPeripheral
-import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
-import platform.Foundation.NSLibraryDirectory
 import platform.Foundation.NSNumber
-import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIApplication
@@ -40,6 +40,8 @@ import kotlin.random.Random
 import kotlin.random.nextULong
 
 class IOSPlatform: Platform() {
+
+    override val mapOptions = MapOptions(gestureOptions = GestureOptions(false, true, false, true), ornamentOptions = OrnamentOptions.AllDisabled)
 
     @OptIn(ExperimentalForeignApi::class)
     override val dataStore: DataStore<Preferences> = createDataStore(

@@ -24,7 +24,8 @@ androidx-room = "2.8.3"
 ksp = "2.2.20-2.0.2"
 sqliteBundled = "2.6.1"
 compass = "2.4.1"
-
+maplibre-compose = "0.11.1"
+uiBackhandler = "1.10.0-beta01"
 
 [libraries]
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
@@ -62,11 +63,11 @@ androidx-activity = { group = "androidx.activity", name = "activity", version.re
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
 androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "androidx-room" }
-maplibre-compose = { module = "dev.sargunv.maplibre-compose:maplibre-compose", version = "0.7.0" }
+maplibre-compose = { group = "org.maplibre.compose", name = "maplibre-compose", version.ref = "maplibre-compose" }
+maplibre-compose-android = { group = "org.maplibre.compose", name = "maplibre-compose-android", version.ref = "maplibre-compose" }
 compass-geocoder = { module = "dev.jordond.compass:geocoder", version.ref = "compass" }
 compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", version.ref = "compass" }
-
-
+ui-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "uiBackhandler" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

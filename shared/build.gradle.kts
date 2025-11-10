@@ -65,11 +65,9 @@ kotlin {
             implementation(libs.filekit.dialogs)
             implementation(libs.filekit.dialogs.compose)
             implementation(libs.filekit.coil)
-            implementation("org.jetbrains.compose.ui:ui-backhandler:1.10.0-alpha01")
+            implementation(libs.ui.backhandler)
             implementation(libs.compass.geocoder)
             implementation(libs.compass.geocoder.mobile)
-
-
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

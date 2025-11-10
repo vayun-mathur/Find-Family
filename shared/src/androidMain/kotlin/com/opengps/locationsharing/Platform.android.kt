@@ -23,10 +23,18 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.OrnamentOptions
 import kotlin.random.Random
 import kotlin.random.nextULong
 
 class AndroidPlatform(private val context: Context): Platform() {
+
+    override val mapOptions = MapOptions(
+        gestureOptions = GestureOptions(false, true, false, true),
+        ornamentOptions = OrnamentOptions.AllDisabled
+    )
 
     override val dataStore: DataStore<Preferences> = createDataStore(context)
 

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -83,12 +82,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import dev.sargunv.maplibrecompose.compose.CameraState
-import dev.sargunv.maplibrecompose.compose.ClickResult
-import dev.sargunv.maplibrecompose.compose.MaplibreMap
-import dev.sargunv.maplibrecompose.compose.rememberCameraState
-import dev.sargunv.maplibrecompose.core.GestureSettings
-import dev.sargunv.maplibrecompose.core.OrnamentSettings
 import dev.whyoleg.cryptography.algorithms.RSA
 import io.github.dellisd.spatialk.geojson.Position
 import io.github.vinceglb.filekit.FileKit
@@ -127,6 +120,14 @@ import location_sharing.shared.generated.resources.temporary_link_title
 import location_sharing.shared.generated.resources.time_remaining
 import location_sharing.shared.generated.resources.unnamed_location
 import org.jetbrains.compose.resources.stringResource
+import org.maplibre.compose.camera.CameraState
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.map.GestureOptions
+import org.maplibre.compose.map.MapOptions
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.OrnamentOptions
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.compose.util.ClickResult
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
@@ -329,7 +330,7 @@ fun MapView() {
     var initialized by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         SuspendScope {
-            camera.awaitInitialized()
+            camera.awaitProjection()
             initialized = true
         }
     }
@@ -488,14 +489,12 @@ fun MapView() {
     }) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             val density = LocalDensity.current
-            MaplibreMap(Modifier, "https://tiles.openfreemap.org/styles/liberty", 0f..20f,
-                0f..60f,
-                GestureSettings(false,true,false,true),
-                OrnamentSettings.AllDisabled, camera,
+            MaplibreMap(Modifier, BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"), camera, 0f..20f,
+                options = platform.mapOptions,
                 onMapClick = { _, offset ->
                     val coords = (users + waypoints).filter { it.currentPosition() != null }.associateBy { it.currentPosition()!! }
                     val obj = coords.firstNotNullOfOrNull { (coord, obj) ->
-                        val center = camera.screenLocationFromPosition(coord.toPosition())
+                        val center = camera.projection!!.screenLocationFromPosition(coord.toPosition())
                         if((center - offset).getDistance() * density.density < 80) {
                             obj
                         } else null
@@ -514,12 +513,12 @@ fun MapView() {
                             val coord =
                                 if (waypoint.id == selectedObject?.id) currentWaypointPosition else waypoint.coord
 
-                            val center = camera.screenLocationFromPosition(coord.toPosition())
+                            val center = camera.projection!!.screenLocationFromPosition(coord.toPosition())
                             if(center !in size.toDpSize()) continue
                             val circumferenceAtLatitude =
                                 40_075_000 * cos(radians(waypoint.coord.lat))
                             val radiusInDegrees = 360 * radiusMeters / circumferenceAtLatitude
-                            val edgePoint = camera.screenLocationFromPosition(
+                            val edgePoint = camera.projection!!.screenLocationFromPosition(
                                 Position(coord.lon + radiusInDegrees, coord.lat)
                             )
                             val radiusPx = abs((center.x - edgePoint.x).toPx())
@@ -534,7 +533,7 @@ fun MapView() {
                     for (user in users) {
                         if (user.currentPosition() == null) continue
                         val center =
-                            camera.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(35.dp, 35.dp)
+                            camera.projection!!.screenLocationFromPosition(user.currentPosition()!!.toPosition()) - DpOffset(35.dp, 35.dp)
 
                         Box(Modifier.offset(center.x, center.y)) {
                             UserPicture(user, 70.dp)
