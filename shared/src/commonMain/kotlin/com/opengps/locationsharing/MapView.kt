@@ -85,9 +85,8 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import dev.whyoleg.cryptography.algorithms.RSA
 import io.github.dellisd.spatialk.geojson.Position
-import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.dialogs.openFilePicker
-import io.github.vinceglb.filekit.dialogs.openFileSaver
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDateTime
@@ -455,21 +454,29 @@ fun MapView() {
                     Icon(Icons.Default.Delete, null)
                 }
             }
+            val save = rememberFileSaverLauncher { file ->
+                if (file != null) {
+                    SuspendScope {
+                        Backup.downloadBackupFile(file)
+                    }
+                }
+            }
             IconButton({
                 SuspendScope {
-                    FileKit.openFileSaver(suggestedName = "findfamily_backup", extension = "db")?.let {
-                        Backup.downloadBackupFile(it)
-                    }
+                    save.launch("findfamily_backup", "db")
                 }
             }) {
                 Icon(Icons.Default.Download, null)
             }
-            IconButton({
-                SuspendScope {
-                    FileKit.openFilePicker()?.let {
-                        Backup.restoreBackupFile(it)
+            val restore = rememberFilePickerLauncher { file ->
+                if(file != null) {
+                    SuspendScope {
+                        Backup.restoreBackupFile(file)
                     }
                 }
+            }
+            IconButton({
+                restore.launch()
             }) {
                 Icon(Icons.Default.Upload, null)
             }

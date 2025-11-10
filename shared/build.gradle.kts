@@ -61,8 +61,6 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.maplibre.compose)
 
-            implementation(libs.filekit.core)
-            implementation(libs.filekit.dialogs)
             implementation(libs.filekit.dialogs.compose)
             implementation(libs.filekit.coil)
             implementation(libs.ui.backhandler)
