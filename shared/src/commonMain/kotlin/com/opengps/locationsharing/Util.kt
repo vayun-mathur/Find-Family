@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
@@ -139,7 +140,7 @@ object DateFormats {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DatePickerHelper(localDate: LocalDate, onDatePicked: (LocalDate) -> Unit) {
+fun DatePickerHelper(localDate: LocalDate, maxDate: LocalDate?, onDatePicked: (LocalDate) -> Unit) {
     var pickedDate by remember { mutableStateOf(localDate.atTime(0, 0, 0).toInstant(TimeZone.UTC).toEpochMilliseconds())}
     val pickedLocalDate by remember { derivedStateOf { Instant.fromEpochMilliseconds(pickedDate).toLocalDateTime(TimeZone.UTC).date } }
     LaunchedEffect(pickedLocalDate) {
@@ -152,7 +153,14 @@ fun DatePickerHelper(localDate: LocalDate, onDatePicked: (LocalDate) -> Unit) {
         Text(pickedLocalDate.format(DateFormats.DATE_INPUT))
     }
     if(showDialog) {
-        val datePickerState = rememberDatePickerState(pickedDate)
+        val datePickerState = rememberDatePickerState(pickedDate, selectableDates = object : SelectableDates{
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return maxDate == null || Instant.fromEpochMilliseconds(utcTimeMillis).toLocalDateTime(TimeZone.UTC).date <= maxDate
+            }
+            override fun isSelectableYear(year: Int): Boolean {
+                return maxDate == null || year <= maxDate.year
+            }
+        })
         DatePickerDialog(
             onDismissRequest = {showDialog = false},
             dismissButton = {
@@ -182,11 +190,18 @@ fun VerticalSlider(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    valueRange: ClosedFloatingPointRange<Float> = 0f..1f
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    maximum: Float? = null
 ) {
     Slider(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = {
+            if(maximum == null || it <= maximum) {
+                onValueChange(it)
+            } else {
+                onValueChange(maximum)
+            }
+        },
         enabled = enabled,
         valueRange = valueRange,
         modifier = modifier

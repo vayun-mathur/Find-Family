@@ -565,6 +565,12 @@ fun MapView() {
                     val colmod = if(isShowingPresent) Modifier else Modifier.fillMaxHeight(1f)
                     Column(colmod.padding(4.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         if (!isShowingPresent) {
+                            val currentDate = Clock.System.now().toLocalDateTime(
+                                TimeZone.currentSystemDefault()
+                            ).date
+                            val currentTime = Clock.System.now().toLocalDateTime(
+                                TimeZone.currentSystemDefault()
+                            ).time
                             var pickedLocalDate by remember {
                                 mutableStateOf(
                                     Clock.System.now().toLocalDateTime(
@@ -582,7 +588,8 @@ fun MapView() {
                                 VerticalSlider(
                                     timeOfDay.toFloat(),
                                     { timeOfDay = it.toInt() },
-                                    valueRange = 0.0f..24f*60f*60f
+                                    valueRange = 0.0f..24f*60f*60f,
+                                    maximum = if(currentDate == pickedLocalDate) currentTime.toSecondOfDay().toFloat() else null
                                 )
                             }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -622,7 +629,7 @@ fun MapView() {
                                 }
                             }
                             Text(pickedLocalTime.format(DateFormats.TIME_SECOND_AM_PM), fontSize = 11.sp)
-                            DatePickerHelper(pickedLocalDate) { pickedLocalDate = it }
+                            DatePickerHelper(pickedLocalDate, currentDate) { pickedLocalDate = it }
                             val simulatedTimestamp = pickedLocalDate.atTime(pickedLocalTime)
                                 .toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
