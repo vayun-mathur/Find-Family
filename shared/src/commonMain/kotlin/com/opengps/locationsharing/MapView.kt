@@ -69,6 +69,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -145,26 +147,29 @@ import kotlin.time.ExperimentalTime
 fun TextP(text: String) = @Composable {Text(text)}
 
 @Composable
-fun UserPicture(user: User, size: Dp) {
-    UserPicture(user.photo, user.name.first(), size)
+fun UserPicture(user: User, size: Dp, grayscale: Boolean = false) {
+    UserPicture(user.photo, user.name.first(), size, grayscale)
 }
 
 @Composable
-fun GreenCircle(size: Dp, char: Char? = null) {
-    Box(Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape).background(Color.Green)) {
+fun GreenCircle(size: Dp, char: Char? = null, grayscale: Boolean = false) {
+    Box(Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape).background(if(grayscale)Color.Gray else Color.Green )) {
         char?.let {
             Text(char.toString(), Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.primary)
         }
     }
 }
 
+val ColorFilter.Companion.GrayScale: ColorFilter
+    get() = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+
 @Composable
-fun UserPicture(userPhoto: String?, firstChar: Char, size: Dp) {
+fun UserPicture(userPhoto: String?, firstChar: Char, size: Dp, grayscale: Boolean) {
     val modifier = Modifier.clip(CircleShape).size(size).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
     if(userPhoto != null)
-        AsyncImage(userPhoto, null, modifier, contentScale = ContentScale.FillWidth)
+        AsyncImage(userPhoto, null, modifier, contentScale = ContentScale.FillWidth, colorFilter = if(grayscale) ColorFilter.GrayScale else null)
     else {
-        GreenCircle(size, firstChar)
+        GreenCircle(size, firstChar, grayscale)
     }
 }
 
@@ -481,14 +486,21 @@ fun MapView() {
         }
         TopAppBar(TextP(selectedObject?.name ?: "Find Family"), Modifier, navIcon, actions)
     }, bottomBar = {
-        BottomAppBar(Modifier.height(400.dp)) {
-            Column(Modifier.height(400.dp).verticalScroll(rememberScrollState())) {
+        val height by remember {derivedStateOf { when(selectedObject) {
+            is User -> 300.dp
+            is Waypoint -> 400.dp
+            is BluetoothDevice -> 300.dp
+            else -> 400.dp
+        }}}
+        BottomAppBar(Modifier.height(height)) {
+            Column(Modifier.height(height).verticalScroll(rememberScrollState())) {
                 SheetContent(selectedObject, usersAll, waypoints, devices)
             }
         }
     }) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             val density = LocalDensity.current
+            var selectedObjectPosition: Position? by remember { mutableStateOf(null) }
             MaplibreMap(Modifier, BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"), camera, 0f..20f,
                 options = platform.mapOptions,
                 onMapClick = { _, offset ->
@@ -504,6 +516,7 @@ fun MapView() {
                     ClickResult.Pass
                 }
             )
+            val obj = selectedObject
             if(initialized) {
                 key(camera.position) {
                     Canvas(Modifier.fillMaxSize()) {
@@ -539,10 +552,17 @@ fun MapView() {
                             UserPicture(user, 70.dp)
                         }
                     }
+                    if(selectedObjectPosition != null && obj is User) {
+                        val center =
+                            camera.projection!!.screenLocationFromPosition(selectedObjectPosition!!) - DpOffset(35.dp, 35.dp)
+
+                        Box(Modifier.offset(center.x, center.y)) {
+                            UserPicture(obj, 70.dp, true)
+                        }
+                    }
                 }
             }
 
-            val obj = selectedObject
             if(obj is User || obj is BluetoothDevice) {
                 Card(Modifier.fillMaxWidth(0.5f).align(Alignment.TopEnd)) {
                     var isShowingPresent by remember { mutableStateOf(true) }
@@ -576,6 +596,7 @@ fun MapView() {
                             val points = locs.map { it.timestamp to it.coord }
                             val closest =
                                 points.minBy { abs(it.first - simulatedTimestamp) }
+                            selectedObjectPosition = closest.second.toPosition()
                             LaunchedEffect(closest.first) {
                                 val newZoom = max(camera.position.zoom, 14.0)
                                 camera.animateTo(
