@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
 var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 
-const val SHARE_INTERVAL = 3000L
+const val SHARE_INTERVAL = 10000L
 
 private var counter = 100
 
