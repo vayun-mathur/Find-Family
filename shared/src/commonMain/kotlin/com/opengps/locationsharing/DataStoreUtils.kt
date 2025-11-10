@@ -2,7 +2,6 @@ package com.opengps.locationsharing
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.byteArrayPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -15,7 +14,9 @@ class DataStoreUtils(private val dataStore: () -> DataStore<Preferences>) {
 
     init {
         SuspendScope {
-            delay(100)
+            while(dataStore() == null) {
+                delay(100)
+            }
             dataStore().data.collect {
                 stateMap = it.asMap()
             }
