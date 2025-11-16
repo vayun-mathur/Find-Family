@@ -162,10 +162,10 @@ private var lastCalled = Instant.fromEpochMilliseconds(0)
 
 // will be called every SHARE_INTERVAL
 @OptIn(ExperimentalTime::class)
-suspend fun backgroundTask(location: Coord, speed: Float, sleep: Boolean = false) {
+suspend fun backgroundTask(location: Coord, speed: Float, accuracy: Float, sleep: Boolean = false) {
     if(Networking.userid == null) return
     if(Clock.System.now() - lastCalled < SHARE_INTERVAL.milliseconds*0.8) return
     lastCalled = Clock.System.now()
-    val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, 1.0f, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel, sleep)
+    val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, accuracy, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel, sleep)
     locationBackend(locationValue)
 }

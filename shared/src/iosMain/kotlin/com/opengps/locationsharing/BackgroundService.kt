@@ -20,7 +20,7 @@ fun onLocationUpdate(arg: CLLocation, sleep: Boolean) {
     }
     if(Clock.System.now().toEpochMilliseconds() - last_time > SHARE_INTERVAL || sleep) {
         last_time = Clock.System.now().toEpochMilliseconds()
-        SuspendScope { backgroundTask(coords, arg.speed.toFloat(), sleep) }
+        SuspendScope { backgroundTask(coords, arg.speed.toFloat(),  1f, sleep) }
     }
 }
 

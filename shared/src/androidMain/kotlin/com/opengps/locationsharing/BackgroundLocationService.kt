@@ -39,7 +39,8 @@ class BackgroundLocationService : Service() {
                             location.latitude,
                             location.longitude
                         ),
-                        location.speed
+                        location.speed,
+                        location.accuracy
                     )
                 } else {
                     println("Location unavailable")
