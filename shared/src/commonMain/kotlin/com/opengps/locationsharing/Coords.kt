@@ -1,7 +1,7 @@
 package com.opengps.locationsharing
 
-import io.github.dellisd.spatialk.geojson.Position
 import kotlinx.serialization.Serializable
+import org.maplibre.spatialk.geojson.Position
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
