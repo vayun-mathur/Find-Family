@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.kotlin.multiplatform.library)
     kotlin("plugin.serialization") version "2.0.0"
     alias(libs.plugins.composeMultiplatform)
     kotlin("plugin.compose")
@@ -11,16 +11,6 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_1_8)
-                }
-            }
-        }
-    }
-    
     listOf(
         iosX64(),
         iosArm64(),
@@ -85,31 +75,24 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+
+    androidLibrary {
+        namespace = "com.opengps.locationsharing"
+        compileSdk = 36
+        minSdk = 31
+        androidResources {
+            enable = true
+        }
+        withJava()
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+    }
 }
 
 //cocoapods {
 //    pod("MapLibre", "6.9.0")
 //}
-
-android {
-    namespace = "com.opengps.locationsharing"
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 31
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-}
-
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.addAll(listOf(
-            "-opt-in=kotlin.time.ExperimentalTime"
-        ))
-    }
-}
 
 room {
     schemaDirectory("$projectDir/schemas")
@@ -120,6 +103,6 @@ dependencies {
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
     add("kspIosX64", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
-    implementation(libs.androidx.runtime.android)
-    implementation(libs.androidx.core)
+//    implementation(libs.androidx.runtime.android)
+//    implementation(libs.androidx.core)
 }

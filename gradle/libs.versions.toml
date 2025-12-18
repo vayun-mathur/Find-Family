@@ -1,10 +1,10 @@
 [versions]
-agp = "8.11.2"
+agp = "9.0.0-beta05"
 coilCompose = "3.3.0"
 cryptographyCore = "0.5.0"
 filekitCore = "0.12.0"
 fragmentKtx = "1.8.9"
-kotlin = "2.2.20"
+kotlin = "2.3.0"
 compose = "1.9.4"
 compose-material3 = "1.4.0"
 androidx-activityCompose = "1.11.0"
@@ -20,8 +20,8 @@ compose-multiplatform = "1.9.3"
 core = "1.17.0"
 activityKtx = "1.11.0"
 activity = "1.11.0"
-androidx-room = "2.8.3"
-ksp = "2.2.20-2.0.2"
+androidx-room = "2.8.4"
+ksp = "2.3.3"
 sqliteBundled = "2.6.1"
 compass = "2.4.1"
 maplibre-compose = "0.11.1"
@@ -68,8 +68,7 @@ ui-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.r
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
-kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }

@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.compose.compiler)
 }
 
@@ -12,7 +11,6 @@ android {
     defaultConfig {
         applicationId = "cc.findfamily.app"
         minSdk = 31
-        targetSdk = 36
         versionCode = 12
         versionName = "v1.11"
     }
@@ -34,21 +32,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
     dependenciesInfo {
-        // Disables dependency metadata when building APKs.
         includeInApk = false
-        // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_1_8
-        freeCompilerArgs.addAll(listOf(
-            "-opt-in=kotlin.time.ExperimentalTime"
-        ))
-    }
-}
+//kotlin {
+//    compilerOptions {
+//        jvmTarget = JvmTarget.JVM_1_8
+//    }
+//}
 
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
