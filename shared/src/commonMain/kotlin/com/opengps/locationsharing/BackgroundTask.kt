@@ -54,7 +54,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
 
     val users1 = usersDao.getAll()
 
-    users1.forEach {
+    users1.filter{it.send}.forEach {
         Networking.publishLocation(locationValue, it)
     }
 
