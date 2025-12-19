@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose.compiler)
@@ -11,8 +9,8 @@ android {
     defaultConfig {
         applicationId = "cc.findfamily.app"
         minSdk = 31
-        versionCode = 12
-        versionName = "v1.11"
+        versionCode = 13
+        versionName = "v1.12"
     }
     buildFeatures {
         compose = true
@@ -36,12 +34,6 @@ android {
         includeInBundle = false
     }
 }
-
-//kotlin {
-//    compilerOptions {
-//        jvmTarget = JvmTarget.JVM_1_8
-//    }
-//}
 
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
