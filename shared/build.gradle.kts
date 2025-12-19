@@ -101,3 +101,9 @@ dependencies {
 //    implementation(libs.androidx.runtime.android)
 //    implementation(libs.androidx.core)
 }
+
+tasks.configureEach {
+    if (name == "extractAndroidMainAnnotations") {
+        dependsOn(tasks.named("kspAndroidMain"))
+    }
+}
