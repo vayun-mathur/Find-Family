@@ -1,5 +1,6 @@
 package com.opengps.locationsharing
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Dao
 import androidx.room.Database
@@ -14,6 +15,7 @@ import androidx.room.Transaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -29,8 +31,6 @@ import kotlin.time.Instant
 interface ObjectParent {
     val id: ULong
     val name: String
-
-    fun currentPosition(): Coord?
 }
 
 @Entity
@@ -52,9 +52,7 @@ data class BluetoothDevice(
     override val id: ULong = 0uL,
     override val name: String,
     val lastLocationValue: LocationValue? = null,
-): ObjectParent {
-    override fun currentPosition() = lastLocationValue?.coord
-}
+): ObjectParent
 
 @Serializable
 enum class RequestStatus {
@@ -81,16 +79,12 @@ data class User(
     var send: Boolean,
     var requestStatus: RequestStatus,
     var lastBatteryLevel: Float?,
-    var lastCoord: Coord?,
     @Serializable(with = InstantSerializer::class)
     var lastLocationChangeTime: Instant = Clock.System.now(),
-    var lastLocationValue: LocationValue? = null,
     @Serializable(with = InstantSerializer::class)
     var deleteAt: Instant? = null,
     var encryptionKey: String? = null,
-): ObjectParent {
-    override fun currentPosition() = lastLocationValue?.coord
-}
+): ObjectParent
 
 @Entity
 @Serializable
@@ -100,14 +94,14 @@ data class Waypoint(
     val range: Double,
     val coord: Coord,
     val usersInactive: MutableList<ULong>
-): ObjectParent {
-    override fun currentPosition() = coord
-}
+): ObjectParent
 
 @Dao
 interface WaypointDao {
     @Query("SELECT * FROM Waypoint")
     suspend fun getAll(): List<Waypoint>
+    @Query("SELECT * FROM Waypoint")
+    fun getAllFlow(): Flow<List<Waypoint>>
     @Upsert
     suspend fun upsert(wp: Waypoint)
     @Delete
@@ -128,6 +122,8 @@ interface WaypointDao {
 interface UsersDao {
     @Query("SELECT * FROM User")
     suspend fun getAll(): List<User>
+    @Query("SELECT * FROM User")
+    fun getAllFlow(): Flow<List<User>>
     @Query("SELECT * FROM User WHERE id = :id")
     suspend fun getByID(id: ULong): User?
     @Upsert
@@ -138,74 +134,43 @@ interface UsersDao {
     suspend fun clear()
     @Insert
     suspend fun insertAll(users: List<User>)
+
+    @Query("DELETE FROM User WHERE deleteAt IS NOT NULL AND deleteAt < :nowThreshold")
+    suspend fun deleteExpiredUsers(nowThreshold: Instant)
+
     @Transaction
     suspend fun setAll(users: List<User>) {
         clear()
         insertAll(users)
     }
-}
 
-object UsersCached {
-    private var usersMap: Map<ULong, User> = mapOf()
-    private val users: List<User> get() = usersMap.values.toList()
-    suspend fun init() {
-        usersMap = platform.database.usersDao().getAll().associateBy { it.id }
-    }
-    suspend fun save() {
-        platform.database.usersDao().setAll(users)
-    }
-
-    fun getAll() = users
-    fun filter(predicate: (User) -> Boolean) {
-        usersMap = usersMap.filter({ predicate(it.value) })
-    }
-    fun updateByID(id: ULong, update: (User) -> User) {
-        usersMap = usersMap + (id to update(usersMap[id]!!))
-    }
-    fun getByID(id: ULong) = usersMap[id]
-    fun upsert(user: User) {
-        usersMap = usersMap + (user.id to user)
-    }
-    fun delete(user: User) {
-        usersMap = usersMap - user.id
-    }
-    fun delete(id: ULong) {
-        usersMap = usersMap - id
-    }
-    fun clear() {
-        usersMap = mapOf()
-    }
-    fun insertAll(users: List<User>) {
-        this.usersMap = this.usersMap + users.associateBy { it.id }
-    }
-    fun setAll(users: List<User>) {
-        clear()
-        insertAll(users)
+    @Transaction
+    suspend fun update(id: ULong, update: (User) -> User) {
+        val user = getByID(id) ?: return
+        upsert(update(user))
     }
 }
 
 @Dao
 interface LocationValueDao {
-    @Query("SELECT * FROM LocationValue")
-    suspend fun getAll(): List<LocationValue>
-    @Query("SELECT * FROM LocationValue WHERE timestamp > :timestamp")
-    suspend fun getSince(timestamp: Long): List<LocationValue>
-    @Query("DELETE FROM LocationValue WHERE timestamp < :timestamp")
-    suspend fun clearBefore(timestamp: Long)
     @Query("SELECT * FROM LocationValue WHERE userid = :id")
-    suspend fun getForID(id: ULong): List<LocationValue>
-    @Upsert
-    suspend fun upsert(locationValue: LocationValue)
+    fun getForID(id: ULong): Flow<List<LocationValue>>
+    @Query("SELECT * FROM LocationValue WHERE userid = :id ORDER BY timestamp DESC LIMIT 1")
+    fun getLatestLocation(id: ULong): Flow<LocationValue?>
+    @Query("SELECT * FROM LocationValue WHERE timestamp IN (SELECT MAX(timestamp) FROM LocationValue GROUP BY userid)")
+    fun getAllLatestLocationsFlow(): Flow<List<LocationValue>>
+    @Query("SELECT * FROM LocationValue WHERE timestamp IN (SELECT MAX(timestamp) FROM LocationValue GROUP BY userid)")
+    suspend fun getAllLatestLocations(): List<LocationValue>
     @Upsert
     suspend fun upsertAll(locationValue: List<LocationValue>)
-    @Delete
-    suspend fun delete(locationValue: LocationValue)
 }
 
 @Dao
 interface BluetoothDeviceDao {
     @Query("SELECT * FROM BluetoothDevice")
     suspend fun getAll(): List<BluetoothDevice>
+    @Query("SELECT * FROM BluetoothDevice")
+    fun getAllFlow(): Flow<List<BluetoothDevice>>
     @Upsert
     suspend fun upsert(bluetoothDevice: BluetoothDevice)
     @Query("SELECT * FROM BluetoothDevice WHERE name = :name")
@@ -227,7 +192,7 @@ class TC {
     @TypeConverter fun fromCoord(value: Coord?) = Json.encodeToString(value)
     @TypeConverter fun toCoord(value: String) = Json.decodeFromString<Coord?>(value)
 }
-@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 9)
+@Database(entities = [Waypoint::class, User::class, LocationValue::class, BluetoothDevice::class], version = 10)
 @TypeConverters(TC::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

@@ -130,7 +130,7 @@ class Networking {
             } else {
                 getKey(user.id)?.also {
                     val keyString = it.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
-                    UsersCached.updateByID(user.id) { user ->
+                    platform.database.usersDao().update(user.id) { user ->
                         user.copy(encryptionKey = keyString)
                     }
                 }

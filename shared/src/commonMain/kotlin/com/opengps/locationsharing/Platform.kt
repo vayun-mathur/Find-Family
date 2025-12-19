@@ -66,8 +66,14 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         connection.execSQL("ALTER TABLE User ADD COLUMN requestStatus TEXT NOT NULL DEFAULT \"MUTUAL_CONNECTION\"")
     }
 }
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE User DROP COLUMN lastLocationValue")
+        connection.execSQL("ALTER TABLE User DROP COLUMN lastCoord")
+    }
+}
 
-val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =
     PreferenceDataStoreFactory.createWithPath(

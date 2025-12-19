@@ -54,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -88,6 +89,7 @@ import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -176,8 +178,9 @@ fun DrawScope.Circle(position: Offset, color: Color, borderColor: Color, radius:
 @OptIn(ExperimentalTime::class)
 @Composable
 fun UserCard(user: User, showSupportingContent: Boolean) {
-    val lastUpdatedTime = user.lastLocationValue?.let { if(it.sleep) "Just now" else timestring(it.timestamp) } ?: "Never"
-    val speed = user.lastLocationValue?.speed?.times(10)?.roundToInt()?.div(10F) ?: 0.0
+    val locationValue by platform.database.locationValueDao().getLatestLocation(user.id).collectAsState(null)
+    val lastUpdatedTime = locationValue?.let { if(it.sleep) "Just now" else timestring(it.timestamp) } ?: "Never"
+    val speed = locationValue?.speed?.times(10)?.roundToInt()?.div(10F) ?: 0.0
     val sinceTime = user.lastLocationChangeTime.toLocalDateTime(TimeZone.currentSystemDefault())
     val timeSinceEntry = Clock.System.now() - user.lastLocationChangeTime
     val sinceString = if(user.locationName == "Unnamed Location")
@@ -201,14 +204,14 @@ fun UserCard(user: User, showSupportingContent: Boolean) {
         }
         "Since $formattedTime $formattedDate"
     }
-    Card(if(showSupportingContent) Modifier.clickable(onClick = { selectedObject = user}) else Modifier) {
+    Card(if(showSupportingContent) Modifier.clickable(onClick = { selectedID = user.id}) else Modifier) {
         ListItem(
             leadingContent = {
                 if(user.deleteAt == null)
                     Column(Modifier.width(65.dp)) {
                         UserPicture(user, 65.dp)
                         Spacer(Modifier.height(4.dp))
-                        user.lastLocationValue?.battery?.let {
+                        locationValue?.battery?.let {
                             BatteryBar(it)
                         }
                     }
@@ -242,7 +245,7 @@ fun WaypointCard(waypoint: Waypoint, users: List<User>) {
         1 -> " is currently here"
         else -> " are currently here"
     }
-    Card(Modifier.clickable(onClick = { selectedObject = waypoint
+    Card(Modifier.clickable(onClick = { selectedID = waypoint.id
         isEditingWaypoint = false})) {
         ListItem(
             headlineContent = { Text(waypoint.name, fontWeight = FontWeight.Bold) },
@@ -253,7 +256,7 @@ fun WaypointCard(waypoint: Waypoint, users: List<User>) {
 
 var currentWaypointPosition by mutableStateOf(Coord(0.0,0.0))
 var currentWaypointRadius by mutableStateOf(0.0)
-var selectedObject by mutableStateOf<ObjectParent?>(null)
+var selectedID by mutableStateOf<ULong?>(null)
 
 private lateinit var camera: CameraState
 
@@ -321,8 +324,8 @@ val editingWaypointRadius = mutableStateOf("")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalTime::class)
 @Composable
 fun MapView() {
-    BackHandler(enabled = selectedObject != null) {
-        selectedObject = null
+    BackHandler(enabled = selectedID != null) {
+        selectedID = null
     }
 
     camera = rememberCameraState()
@@ -337,33 +340,41 @@ fun MapView() {
 
     val waypointDao = platform.database.waypointDao()
     val bluetoothDao = platform.database.bluetoothDeviceDao()
+    val usersDao = platform.database.usersDao()
 
-    var objects by remember {mutableStateOf(mapOf<ULong, ObjectParent>())}
-    val waypoints by remember { derivedStateOf { objects.values.filterIsInstance<Waypoint>() } }
-    val usersAll by remember { derivedStateOf { objects.values.filterIsInstance<User>() } }
-    val users by remember { derivedStateOf { usersAll.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION } } }
-    val devices by remember { derivedStateOf { objects.values.filterIsInstance<BluetoothDevice>() } }
+    val waypoints by waypointDao.getAllFlow().collectAsState(listOf())
+    val usersAll by usersDao.getAllFlow().collectAsState(listOf())
+    val users = usersAll.filter { it.requestStatus == RequestStatus.MUTUAL_CONNECTION }
+    val devices by bluetoothDao.getAllFlow().collectAsState(listOf())
+
+    val objects = (waypoints + users + devices).associateBy { it.id }
+    val selectedObject = objects[selectedID]
 
     addPersonPopupEnable = BasicDialog { AddPersonPopup() }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
     val addDevicePopupEnable = BasicDialog { AddDevicePopup() }
 
+
+    val latestLocations by platform.database.locationValueDao()
+        .getAllLatestLocationsFlow()
+        .map { it.associateBy { it.userid } }
+        .collectAsState(mapOf())
+
     LaunchedEffect(Unit) {
         SuspendScope {
-            UsersCached.init()
-            objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
             while(Networking.userid == null) { delay(500) }
             if(users.isEmpty()) {
-                val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, RequestStatus.MUTUAL_CONNECTION, null, null)
-                UsersCached.upsert(newUser)
-                objects = objects + (newUser.id to newUser)
+                val newUser = User(Networking.userid!!, "Me", null, "Unnamed Location", true, RequestStatus.MUTUAL_CONNECTION, null)
+                usersDao.upsert(newUser)
             }
+        }
+    }
 
-            while(true) {
-                objects = (waypointDao.getAll() + UsersCached.getAll() + bluetoothDao.getAll()).associateBy { it.id }
-                selectedObject = objects[selectedObject?.id]
-                delay(1000)
-            }
+    fun ObjectParent.currentPosition(): Coord? {
+        if(this is Waypoint) {
+            return this.coord
+        } else {
+            return latestLocations[id]?.coord
         }
     }
 
@@ -398,11 +409,10 @@ fun MapView() {
                             ),
                             mutableListOf()
                         )
-                        objects = objects + (newWaypoint.id to newWaypoint)
                         SuspendScope {
                             platform.database.waypointDao().upsert(newWaypoint)
                         }
-                        selectedObject = newWaypoint
+                        selectedID = newWaypoint.id
                         isEditingWaypoint = true
                     }
                 )
@@ -443,13 +453,12 @@ fun MapView() {
                 IconButton({
                     SuspendScope {
                         when (obj) {
-                            is User -> UsersCached.delete(obj)
+                            is User -> usersDao.delete(obj)
                             is Waypoint -> waypointDao.delete(obj)
                             is BluetoothDevice -> bluetoothDao.delete(obj)
                         }
-                        objects = objects - obj.id
                     }
-                    selectedObject = null
+                    selectedID = null
                 }) {
                     Icon(Icons.Default.Delete, null)
                 }
@@ -483,7 +492,7 @@ fun MapView() {
         }
         val navIcon = @Composable {
             if (selectedObject != null)
-                IconButton({ selectedObject = null }) {
+                IconButton({ selectedID = null }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                 }
         }
@@ -515,7 +524,7 @@ fun MapView() {
                         } else null
                     }
                     if(obj != null)
-                        selectedObject = obj
+                        selectedID = obj.id
                     ClickResult.Pass
                 }
             )
@@ -640,11 +649,7 @@ fun MapView() {
                             val simulatedTimestamp = pickedLocalDate.atTime(pickedLocalTime)
                                 .toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
-                            var locs by remember { mutableStateOf(locations[obj.id] ?: listOf()) }
-
-                            LaunchedEffect(Unit) {
-                                locs = platform.database.locationValueDao().getForID(obj.id)
-                            }
+                            val locs by platform.database.locationValueDao().getForID(obj.id).collectAsState(emptyList())
                             if (locs.isNotEmpty()) {
                                 val points = locs.map { it.timestamp to it.coord }
                                 val closest =
@@ -740,9 +745,11 @@ fun BasicDialog(dismiss: () -> Unit = {}, content: @Composable DialogScope.() ->
 @Composable
 fun UserSheetContent(user: User) {
 
+    val usersDao = platform.database.usersDao()
+
     val requestPickContact1 = platform.requestPickContact { name, photo ->
         SuspendScope {
-            UsersCached.upsert(user.copy(name = name, photo = photo))
+            usersDao.upsert(user.copy(name = name, photo = photo))
         }
     }
     UserCard(user, true)
@@ -760,7 +767,7 @@ fun UserSheetContent(user: User) {
                         user.send,
                         { send ->
                             SuspendScope {
-                                UsersCached.upsert(user.copy(send = send))
+                                usersDao.upsert(user.copy(send = send))
                             }
                         })
                 }
@@ -870,7 +877,7 @@ fun UserAwaitingRequest(user: User) {
                 }) { TextP("Accept")() }
                 OutlinedButton({
                     SuspendScope {
-                        UsersCached.delete(user.id)
+                        platform.database.usersDao().delete(user)
                     }
                 }) { TextP("Deny")() }
             }
@@ -889,7 +896,7 @@ fun UserAwaitingResponse(user: User) {
             headlineContent = { Text(user.name, fontWeight = FontWeight.Bold) }, trailingContent = {
                 IconButton({
                     SuspendScope {
-                        UsersCached.delete(user.id)
+                        platform.database.usersDao().delete(user)
                     }
                 }) {
                     Icon(Icons.Default.Delete, null)
@@ -935,7 +942,7 @@ fun SheetContent(selectedObject: ObjectParent?, usersAll: List<User>, waypoints:
 
 @Composable
 fun DeviceCard(device: BluetoothDevice) {
-    Card(Modifier.clickable(onClick = { selectedObject = device})) {
+    Card(Modifier.clickable(onClick = { selectedID = device.id})) {
         ListItem(
             headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) }
         )
@@ -944,7 +951,7 @@ fun DeviceCard(device: BluetoothDevice) {
 
 @Composable
 fun DeviceSheetContent(device: BluetoothDevice) {
-    Card(Modifier.clickable(onClick = { selectedObject = device})) {
+    Card(Modifier.clickable(onClick = { selectedID = device.id})) {
         ListItem(
             headlineContent = { Text(device.name, fontWeight = FontWeight.Bold) }
         )
@@ -956,6 +963,7 @@ var AddPersonPopupInitial: ULong? = null
 @OptIn(ExperimentalTime::class)
 @Composable
 fun DialogScope.AddPersonPopup() {
+    val usersDao = platform.database.usersDao()
     var contactName by remember { mutableStateOf("") }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->
@@ -972,7 +980,6 @@ fun DialogScope.AddPersonPopup() {
                     "",
                     false,
                     RequestStatus.AWAITING_RESPONSE,
-                    null,
                     null
                 ), false
             )
@@ -987,16 +994,20 @@ fun DialogScope.AddPersonPopup() {
                     })
             }
     }
-    val recipientID = SimpleOutlinedTextField(stringResource(Res.string.contact_findfamily_id), initial = AddPersonPopupInitial?.encodeBase26()?:"", isError = { UsersCached.getByID(it.decodeBase26())?.requestStatus in listOf(
-        RequestStatus.AWAITING_RESPONSE, RequestStatus.MUTUAL_CONNECTION) }, subtext = {
-        if(it.decodeBase26() == Networking.userid) "Cannot share your location with yourself"
-        else when(UsersCached.getByID(it.decodeBase26())?.requestStatus) {
-            RequestStatus.MUTUAL_CONNECTION -> "Already sharing with this person"
-            RequestStatus.AWAITING_RESPONSE -> "Already requested to share with this person"
-            RequestStatus.AWAITING_REQUEST -> "This person has requested your location"
-            else -> null
-        }
-    }, readOnly = AddPersonPopupInitial != null)
+    val users by usersDao.getAllFlow().map{it.associateBy { it.id }}.collectAsState(emptyMap())
+    val recipientID = SimpleOutlinedTextField(stringResource(Res.string.contact_findfamily_id),
+        initial = AddPersonPopupInitial?.encodeBase26()?:"",
+        isError = { users[it.decodeBase26()]?.requestStatus in listOf(RequestStatus.AWAITING_RESPONSE, RequestStatus.MUTUAL_CONNECTION) },
+        subtext = {
+            if(it.decodeBase26() == Networking.userid) "Cannot share your location with yourself"
+            else when(users[it.decodeBase26()]?.requestStatus) {
+                RequestStatus.MUTUAL_CONNECTION -> "Already sharing with this person"
+                RequestStatus.AWAITING_RESPONSE -> "Already requested to share with this person"
+                RequestStatus.AWAITING_REQUEST -> "This person has requested your location"
+                else -> null
+            }
+        },
+        readOnly = AddPersonPopupInitial != null)
 
     Text(stringResource(Res.string.contact_findfamily_id_desc))
     OutlinedButton({
@@ -1011,7 +1022,7 @@ fun DialogScope.AddPersonPopup() {
         SuspendScope {
             val trueID = recipientID().decodeBase26()
             checkSharingRequests()
-            val requestStatus = if(UsersCached.getByID(trueID)?.requestStatus == RequestStatus.AWAITING_REQUEST) {
+            val requestStatus = if(usersDao.getByID(trueID)?.requestStatus == RequestStatus.AWAITING_REQUEST) {
                 checkSharingRequests()
                 RequestStatus.MUTUAL_CONNECTION
             } else {
@@ -1026,15 +1037,14 @@ fun DialogScope.AddPersonPopup() {
                 true,
                 requestStatus,
                 null,
-                null,
             )
-            UsersCached.upsert(newUser)
+            usersDao.upsert(newUser)
             close()
         }
-    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty() && UsersCached.getByID(recipientID().decodeBase26())?.requestStatus !in listOf(
+    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty() && users[recipientID().decodeBase26()]?.requestStatus !in listOf(
         RequestStatus.AWAITING_RESPONSE, RequestStatus.MUTUAL_CONNECTION)
     ) {
-        if(UsersCached.getByID(recipientID().decodeBase26())?.requestStatus == RequestStatus.AWAITING_RESPONSE) {
+        if(users[recipientID().decodeBase26()]?.requestStatus == RequestStatus.AWAITING_RESPONSE) {
             Text(stringResource(Res.string.accept_start_sharing))
         } else {
             Text(stringResource(Res.string.request_start_sharing))
@@ -1066,17 +1076,19 @@ fun DialogScope.AddPersonPopupTemporary() {
     )
     DropdownField(expiryTime, { expiryTime = it }, options.keys)
 
+    val usersDao = platform.database.usersDao()
+
     OutlinedButton({
         SuspendScope {
             val keypair = Networking.generateKeyPair()
 
             val newUser = User(Random.nextULong(), contactName(), null,
                 keypair.privateKey.encodeToByteArray(RSA.PrivateKey.Format.PEM).encodeBase64(),
-                true, RequestStatus.MUTUAL_CONNECTION, null, null,
+                true, RequestStatus.MUTUAL_CONNECTION, null,
                 deleteAt = Clock.System.now() + options[expiryTime]!!,
                 encryptionKey = keypair.publicKey.encodeToByteArray(RSA.PublicKey.Format.PEM).encodeBase64()
             )
-            UsersCached.upsert(newUser)
+            usersDao.upsert(newUser)
             close()
         } }, Modifier,contactName().isNotEmpty() && expiryTime.isNotEmpty()) {
         Text(stringResource(Res.string.temporary_link_submit))

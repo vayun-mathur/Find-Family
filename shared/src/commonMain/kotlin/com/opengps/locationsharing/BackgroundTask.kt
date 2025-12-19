@@ -14,8 +14,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
-var locations by mutableStateOf(mutableMapOf<ULong, List<LocationValue>>())
-var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
+private var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 
 const val SHARE_INTERVAL = 10000L
 
@@ -25,19 +24,19 @@ private var counter = 100
 suspend fun checkSharingRequests() {
     // retrieve requests
     Networking.retrieveRequestsOfMe().map {
-        User(it.toULong(), it.toULong().encodeBase26(), null, "", false, RequestStatus.AWAITING_REQUEST, null, null)
+        User(it.toULong(), it.toULong().encodeBase26(), null, "", false, RequestStatus.AWAITING_REQUEST, null)
     }.forEach {
-        UsersCached.upsert(it)
+        platform.database.usersDao().upsert(it)
         platform.createNotification("Your Location Requested", "by ${it.id.encodeBase26()}", channelId = "SHARING_REQUEST")
     }
 }
 
 @OptIn(ExperimentalTime::class)
 private suspend fun locationBackend(locationValue: LocationValue) {
-    println("updated location 1")
-    if(locations.isEmpty()) {
-        UsersCached.init()
-        locations = platform.database.locationValueDao().getSince((Clock.System.now() - 2.days).toEpochMilliseconds()).groupBy { it.userid }.toMutableMap()
+    val usersDao = platform.database.usersDao()
+
+    if(latestLocations.isEmpty()) {
+        latestLocations = platform.database.locationValueDao().getAllLatestLocations().associateBy { it.userid }
         println("got locations")
     }
 
@@ -46,32 +45,29 @@ private suspend fun locationBackend(locationValue: LocationValue) {
     val geocoder = Geocoder()
     val waypoints = platform.database.waypointDao().getAll()
 
-    // remove recipients who were temporary and are no longer valid
-    UsersCached.filter { user ->
-        !(user.deleteAt != null && user.deleteAt!! < Clock.System.now())
-    }
+    platform.database.usersDao().deleteExpiredUsers(Clock.System.now())
 
     if(counter++ == 100) {
         Networking.ensureUserExists()
         counter = 0
     }
 
-    UsersCached.getAll().filter{ it.send }.forEach { Networking.publishLocation(locationValue, it) }
+    val users1 = usersDao.getAll()
+
+    users1.forEach {
+        Networking.publishLocation(locationValue, it)
+    }
 
     val receivedLocations = Networking.receiveLocations() ?: listOf()
 
-    val newLocations = receivedLocations.groupBy { it.userid }.filterKeys { id -> UsersCached.getByID(id) != null }.mapValues { it.value.sortedBy { it.timestamp } }
-    for ((key, value) in newLocations) {
-        // If the key already exists, add the new list values to the existing list
-        locations[key] = (locations[key] ?: mutableListOf()) + value
-        platform.database.locationValueDao().upsertAll(value)
-    }
-    latestLocations = locations.mapValues { it.value.maxByOrNull { it.timestamp }!! }
-    for (user in UsersCached.getAll()) {
+    val newLocations = receivedLocations.groupBy { it.userid }.filterKeys { id -> usersDao.getByID(id) != null }.mapValues { it.value.sortedBy { it.timestamp } }
+    latestLocations = latestLocations + newLocations.mapValues { it.value.last() }
+    platform.database.locationValueDao().upsertAll(newLocations.values.flatten())
+
+    for (user in users1) {
         val latest = latestLocations[user.id] ?: continue
-        UsersCached.updateByID(user.id) { it.copy(lastLocationValue = latest) }
         if(user.requestStatus == RequestStatus.AWAITING_RESPONSE) {
-            UsersCached.updateByID(user.id) { it.copy(requestStatus = RequestStatus.MUTUAL_CONNECTION) }
+            usersDao.update(user.id) { it.copy(requestStatus = RequestStatus.MUTUAL_CONNECTION) }
         }
 
         // battery level
@@ -84,7 +80,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 )
         }
         if(user.lastBatteryLevel != latest.battery) {
-            UsersCached.updateByID(user.id) { it.copy(lastBatteryLevel = latest.battery) }
+            usersDao.update(user.id) { it.copy(lastBatteryLevel = latest.battery) }
         }
 
         val waypointsSubset = waypoints.filter { !it.usersInactive.contains(user.id) }
@@ -98,7 +94,7 @@ private suspend fun locationBackend(locationValue: LocationValue) {
         val locationName = wpIn?.name ?: geocoderResult ?: "Unnamed Location"
 
         if(locationName != user.locationName) {
-            UsersCached.updateByID(user.id) { it.copy(locationName = locationName, lastLocationChangeTime = Clock.System.now(), lastCoord = latest.coord) }
+            usersDao.update(user.id) { it.copy(locationName = locationName, lastLocationChangeTime = Clock.System.now()) }
             if(wpIn != null && user.id != Networking.userid)
                 platform.createNotification(
                     user.name,
@@ -107,7 +103,6 @@ private suspend fun locationBackend(locationValue: LocationValue) {
                 )
 
         }
-        UsersCached.save()
 
 //        if(wpIn != null) {
 //            val wasInEarlier = waypointsSubset.find { havershine(it.coord, user.lastCoord?:Coord(0.0,0.0)) < it.range }
