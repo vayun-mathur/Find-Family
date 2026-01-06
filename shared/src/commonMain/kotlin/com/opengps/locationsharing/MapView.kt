@@ -108,13 +108,14 @@ import location_sharing.shared.generated.resources.contact_findfamily_id_desc
 import location_sharing.shared.generated.resources.copy_findfamily_id
 import location_sharing.shared.generated.resources.hour
 import location_sharing.shared.generated.resources.hours
+import location_sharing.shared.generated.resources.link_device_contact
 import location_sharing.shared.generated.resources.minutes
+import location_sharing.shared.generated.resources.no_contact_selected
 import location_sharing.shared.generated.resources.request_start_sharing
 import location_sharing.shared.generated.resources.saved_place_name
 import location_sharing.shared.generated.resources.saved_place_notification
 import location_sharing.shared.generated.resources.saved_place_range
 import location_sharing.shared.generated.resources.share_your_location
-import location_sharing.shared.generated.resources.tap_pick_contact
 import location_sharing.shared.generated.resources.temporary_link_name
 import location_sharing.shared.generated.resources.temporary_link_submit
 import location_sharing.shared.generated.resources.temporary_link_title
@@ -970,7 +971,7 @@ fun DialogScope.AddPersonPopup() {
         contactName = name
         contactPhoto = photo
     }
-    Box(Modifier.clickable { requestPickContact2() }) {
+    Box {
         if (contactName.isNotEmpty())
             UserCard(
                 User(
@@ -988,7 +989,7 @@ fun DialogScope.AddPersonPopup() {
                 ListItem(
                     leadingContent = { GreenCircle(50.dp) },
                     headlineContent = {
-                        Text(stringResource(Res.string.tap_pick_contact),
+                        Text(stringResource(Res.string.no_contact_selected),
                             fontWeight = FontWeight.Bold
                         )
                     })
@@ -1014,6 +1015,12 @@ fun DialogScope.AddPersonPopup() {
         platform.copyToClipboard(Networking.userid!!.encodeBase26())
     }) {
         Text(stringResource(Res.string.copy_findfamily_id))
+    }
+
+    OutlinedButton({
+        requestPickContact2()
+    }) {
+        Text(stringResource(Res.string.link_device_contact))
     }
 
     val unnamed_str = stringResource(Res.string.unnamed_location)

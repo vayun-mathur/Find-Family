@@ -20,10 +20,11 @@
     <string name="saved_place_range">Saved Place Range (Radius)</string>
     <string name="save">Save</string>
     <string name="saved_place_notification">Saved Place Entry/Exit Notifications</string>
-    <string name="tap_pick_contact">Tap to Select a Contact</string>
+    <string name="no_contact_selected">No Contact Selected</string>
     <string name="contact_findfamily_id">Contact's FindFamily ID</string>
     <string name="contact_findfamily_id_desc">Share your FindFamily ID with your contact, then enter their ID here</string>
     <string name="copy_findfamily_id">Copy Your FindFamily ID</string>
+    <string name="link_device_contact">Link to Device Contact</string>
     <string name="unnamed_location">Unnamed Location</string>
     <string name="request_start_sharing">Request Location Sharing</string>
     <string name="accept_start_sharing">Start Location Sharing</string>
