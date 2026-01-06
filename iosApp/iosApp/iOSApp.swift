@@ -2,6 +2,10 @@ import SwiftUI
 import CoreLocation
 import shared
 
+import OSLog
+
+let logger = Logger(subsystem: "cc.findfamily.ios.app", category: "Network")
+
 // Shared state that manages the `CLLocationManager` and `CLBackgroundActivitySession`.
 @MainActor class LocationsHandler: ObservableObject {
 
@@ -13,6 +17,7 @@ import shared
 	private init() {
 		self.manager = CLLocationManager()  // Creating a location manager instance is safe to call here in `MainActor`.
 		self.manager.allowsBackgroundLocationUpdates = true
+        UIDevice.current.isBatteryMonitoringEnabled = true
 	}
 
 	func startLocationUpdates() {
@@ -28,7 +33,8 @@ import shared
 				for try await update in updates {
 					if let loc = update.location {
 					    print("new location")
-                        BackgroundServiceKt.onLocationUpdate(arg: loc)
+                        logger.debug("New Location...")
+                        BackgroundServiceKt.onLocationUpdate(arg: loc, sleep: false)
 					}
                     
                     if update.authorizationDenied {

@@ -1,11 +1,14 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlin.multiplatform.library)
-    kotlin("plugin.serialization") version "2.0.0"
+    kotlin("plugin.serialization") version "2.3.0"
     alias(libs.plugins.composeMultiplatform)
     kotlin("plugin.compose")
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    id("io.github.frankois944.spmForKmp") version "1.4.0"
 }
 
 kotlin {
@@ -20,6 +23,11 @@ kotlin {
 
             // Required when using NativeSQLiteDriver
             linkerOpts.add("-lsqlite3")
+        }
+        it.compilations {
+            getByName("main") {
+                cinterops.create("spmMaplibre")
+            }
         }
     }
 
@@ -83,11 +91,26 @@ kotlin {
         }
         withJava()
     }
+
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework> {
+            // Fixes: "Cannot infer a bundle ID..."
+            binaryOption("bundleId", "cc.findfamily.ios.app")
+        }
+    }
 }
 
-//cocoapods {
-//    pod("MapLibre", "6.9.0")
-//}
+swiftPackageConfig {
+    create("spmMaplibre") {
+        dependency {
+            remotePackageVersion(
+                url = URI("https://github.com/maplibre/maplibre-gl-native-distribution.git"),
+                products = { add("MapLibre") },
+                version = "6.17.1",
+            )
+        }
+    }
+}
 
 room {
     schemaDirectory("$projectDir/schemas")

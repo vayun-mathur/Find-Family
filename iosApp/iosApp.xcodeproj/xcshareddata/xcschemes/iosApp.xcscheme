@@ -11,7 +11,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Run Script"
-               scriptText = "cd &quot;/Users/vayun/StudioProjects/Find-Family/&quot;&#10;./gradlew :shared:embedAndSignAppleFrameworkForXcode&#10;">
+               scriptText = "cd &quot;/Users/madhulikasachdeva/AndroidStudioProjects/Location_Sharing/&quot;&#10;./gradlew :shared:embedAndSignAppleFrameworkForXcode&#10;">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"

@@ -16,7 +16,7 @@ import kotlin.time.ExperimentalTime
 
 private var latestLocations by mutableStateOf(mapOf<ULong, LocationValue>())
 
-const val SHARE_INTERVAL = 10000L
+const val SHARE_INTERVAL = 3000L
 
 private var counter = 100
 
@@ -158,7 +158,9 @@ private var lastCalled = Instant.fromEpochMilliseconds(0)
 // will be called every SHARE_INTERVAL
 @OptIn(ExperimentalTime::class)
 suspend fun backgroundTask(location: Coord, speed: Float, accuracy: Float, sleep: Boolean = false) {
-    if(Networking.userid == null) return
+    if(Networking.userid == null) {
+        Networking.init()
+    }
     if(Clock.System.now() - lastCalled < SHARE_INTERVAL.milliseconds*0.8) return
     lastCalled = Clock.System.now()
     val locationValue = LocationValue(Random.nextULong(), Networking.userid!!, Coord(location.lat, location.lon), speed, accuracy, Clock.System.now().toEpochMilliseconds(), platform.batteryLevel, sleep)

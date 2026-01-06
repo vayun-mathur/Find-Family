@@ -114,8 +114,6 @@ class IOSPlatform: Platform() {
     }
 
     override fun runBackgroundService() {
-        BackgroundService()
-        UIDevice.currentDevice.batteryMonitoringEnabled = true
     }
 
     override fun createNotification(title: String, body: String, channelId: String) {

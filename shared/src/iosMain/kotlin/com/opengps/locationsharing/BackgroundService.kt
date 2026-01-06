@@ -7,12 +7,6 @@ import platform.CoreLocation.CLLocation
 
 private var last_time: Long = 0
 
-fun BackgroundService() {
-    SuspendScope {
-        Networking.init()
-    }
-}
-
 @OptIn(ExperimentalForeignApi::class)
 fun onLocationUpdate(arg: CLLocation, sleep: Boolean) {
     val coords = arg.coordinate.useContents {

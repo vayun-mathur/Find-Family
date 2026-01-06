@@ -38,12 +38,8 @@ android {
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(projects.shared)
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.compose.material3)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.activity)
-    debugImplementation(libs.compose.ui.tooling)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.fragment.ktx)
 }
