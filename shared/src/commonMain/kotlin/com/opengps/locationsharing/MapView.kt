@@ -88,8 +88,11 @@ import dev.whyoleg.cryptography.algorithms.RSA
 import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.dialogs.compose.rememberFileSaverLauncher
 import io.ktor.util.encodeBase64
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -965,35 +968,26 @@ var AddPersonPopupInitial: ULong? = null
 @Composable
 fun DialogScope.AddPersonPopup() {
     val usersDao = platform.database.usersDao()
-    var contactName by remember { mutableStateOf("") }
+    var contactName: String? by remember { mutableStateOf(null) }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->
-        contactName = name
-        contactPhoto = photo
+        CoroutineScope(Dispatchers.Main).launch {
+            contactName = name
+            contactPhoto = photo
+        }
     }
     Box {
-        if (contactName.isNotEmpty())
-            UserCard(
-                User(
-                    Random.nextULong(),
-                    contactName,
-                    contactPhoto,
-                    "",
-                    false,
-                    RequestStatus.AWAITING_RESPONSE,
-                    null
-                ), false
-            )
-        else
-            Card {
-                ListItem(
-                    leadingContent = { GreenCircle(50.dp) },
-                    headlineContent = {
-                        Text(stringResource(Res.string.no_contact_selected),
-                            fontWeight = FontWeight.Bold
-                        )
-                    })
-            }
+        UserCard(
+            User(
+                Random.nextULong(),
+                contactName ?: stringResource(Res.string.no_contact_selected),
+                contactPhoto,
+                "",
+                false,
+                RequestStatus.AWAITING_RESPONSE,
+                null
+            ), false
+        )
     }
     val users by usersDao.getAllFlow().map{it.associateBy { it.id }}.collectAsState(emptyMap())
     val recipientID = SimpleOutlinedTextField(stringResource(Res.string.contact_findfamily_id),
@@ -1038,7 +1032,7 @@ fun DialogScope.AddPersonPopup() {
             }
             val newUser = User(
                 trueID,
-                contactName,
+                contactName!!,
                 contactPhoto,
                 unnamed_str,
                 true,
@@ -1048,7 +1042,7 @@ fun DialogScope.AddPersonPopup() {
             usersDao.upsert(newUser)
             close()
         }
-    }, enabled = contactName.isNotEmpty() && recipientID().isNotEmpty() && users[recipientID().decodeBase26()]?.requestStatus !in listOf(
+    }, enabled = contactName != null && recipientID().isNotEmpty() && users[recipientID().decodeBase26()]?.requestStatus !in listOf(
         RequestStatus.AWAITING_RESPONSE, RequestStatus.MUTUAL_CONNECTION)
     ) {
         if(users[recipientID().decodeBase26()]?.requestStatus == RequestStatus.AWAITING_RESPONSE) {
