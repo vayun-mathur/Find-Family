@@ -22,7 +22,7 @@
     <string name="saved_place_notification">Notifica d'ingresso/uscita da un luogo salvato</string>
     <string name="no_contact_selected">Clicca per selezionare un contatto</string>
     <string name="contact_findfamily_id">Identificativo FindFamily del contatto</string>
-    <string name="contact_findfamily_id_desc">Invia il tuo identificativo FindFamily al tuo contatto, puoi immetti il suo identificativo qui.</string>
+    <string name="contact_findfamily_id_desc">Invia il tuo identificativo FindFamily al tuo contatto, puoi immettere il suo identificativo qui.</string>
     <string name="copy_findfamily_id">Copia il tuo identificativo FindFamily</string>
     <string name="link_device_contact">Collegati al dispositivo del contatto</string>
     <string name="unnamed_location">Posizione senza nome</string>
