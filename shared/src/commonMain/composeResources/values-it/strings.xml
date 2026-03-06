@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_person">Aggiungi una persona</string>
+    <string name="create_sharable_link">Crea un collegamento da condividere</string>
+    <string name="add_saved_location">Aggiungi un luogo</string>
+    <string name="new_saved_place">Nuovo luogo</string>
+    <string name="showing">Visualizzato:</string>
+    <string name="present">Attuale</string>
+    <string name="past">Passato</string>
+    <string name="connect_bluetooth_device">Connetti un dispositivo Bluetooth</string>
+    <string name="connect_bluetooth_device_description">I dispositivi devono essere associati al telefono, prima di comparire qui</string>
+    <string name="show_on_map">Mostra sulla mappa</string>
+    <string name="share_your_location">Condividi la posizione</string>
+    <string name="change_connected_contact">Cambia il contatto associato</string>
+    <string name="time_remaining">Tempo restante</string>
+    <string name="hour">ora</string>
+    <string name="hours">ore</string>
+    <string name="minutes">minuti</string>
+    <string name="saved_place_name">Nome luogo da salvare</string>
+    <string name="saved_place_range">Dimensione (raggio) del luogo da salvare</string>
+    <string name="save">Salva</string>
+    <string name="saved_place_notification">Notifica d'ingresso/uscita da un luogo salvato</string>
+    <string name="no_contact_selected">Clicca per selezionare un contatto</string>
+    <string name="contact_findfamily_id">Identificativo FindFamily del contatto</string>
+    <string name="contact_findfamily_id_desc">Invia il tuo identificativo FindFamily al tuo contatto, puoi immettere il suo identificativo qui.</string>
+    <string name="copy_findfamily_id">Copia il tuo identificativo FindFamily</string>
+    <string name="link_device_contact">Collegati al dispositivo del contatto</string>
+    <string name="unnamed_location">Posizione senza nome</string>
+    <string name="request_start_sharing">Chiedi la condivisione della posizione</string>
+    <string name="accept_start_sharing">Inizia la condivisione della posizione</string>
+    <string name="temporary_link_title">Collegamento FindFamily temporaneo</string>
+    <string name="temporary_link_name">Dai un nome a questo collegamento</string>
+    <string name="temporary_link_expiry">Il collegamento scade tra</string>
+    <string name="temporary_link_submit">Crea un collegamento temporaneo da condividere</string>
+</resources>
