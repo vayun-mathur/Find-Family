@@ -1,3 +1,10 @@
+## Notice: update to new app
+This app is superceded by the version in https://github.com/vayun-mathur/Modern-Apps
+Until the app is published on f-droid, you can download the apks from the github releases, and f-droid will automatically update from that when it is published there.
+This new version fixes the reliability issues.
+
+This repository will continue to exist for the future development of the iOS app (the new v2.0 is Android-only)
+
 # Find Family - Location Sharing App
 Find Family is a simple, end-to-end encrypted location sharing app for family and friends.
 
