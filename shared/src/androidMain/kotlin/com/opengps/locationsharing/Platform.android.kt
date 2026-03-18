@@ -91,36 +91,6 @@ class AndroidPlatform(private val context: Context): Platform() {
         clipboardManager.setPrimaryClip(clipData)
     }
 
-    @SuppressLint("MissingPermission")
-    override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): ()->Unit {
-        if(PermissionChecker.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PermissionChecker.PERMISSION_GRANTED
-            && PermissionChecker.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PermissionChecker.PERMISSION_GRANTED) {
-            val blm = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-            val callback = object : ScanCallback() {
-                override fun onScanResult(callbackType: Int, result: ScanResult?) {
-                    if (result == null) return
-                    val name = result.device.alias ?: return
-                    if (!nearBluetoothDevices.any { it.name == name })
-                        nearBluetoothDevices.add(
-                            BluetoothDevice(
-                                Random.nextULong(),
-                                name
-                            )
-                        )
-                    setRSSI(result.device.address, result.rssi)
-                }
-            }
-            if(blm.adapter.bluetoothLeScanner != null) {
-                blm.adapter.bluetoothLeScanner
-                blm.adapter.bluetoothLeScanner.startScan(callback)
-                return { blm.adapter.bluetoothLeScanner.stopScan(callback) }
-            } else {
-                return {}
-            }
-        }
-        return {}
-    }
-
     override val batteryLevel: Float
         get() {
             val batteryStatus: Intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))!!

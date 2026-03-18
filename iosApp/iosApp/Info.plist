@@ -33,14 +33,12 @@
 			</dict>
 		</dict>
 	</dict>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>This app uses bluetooth to detect when saved devices are around you</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs to access your location in order to enable location sharing at all times</string>
+	<string>Background Location data is used to send it to the devices you connect to this app</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs to access your location in order to enable location sharing at all times</string>
+	<string>Background Location data is used to send it to the devices you connect to this app</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs to access your location in order to enable location sharing</string>
+	<string>Location data is used to send it to the devices you connect to this app</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

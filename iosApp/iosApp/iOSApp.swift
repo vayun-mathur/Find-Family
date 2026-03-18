@@ -32,7 +32,6 @@ let logger = Logger(subsystem: "cc.findfamily.ios.app", category: "Network")
 				let updates = CLLocationUpdate.liveUpdates()
 				for try await update in updates {
 					if let loc = update.location {
-					    print("new location")
                         logger.debug("New Location...")
                         BackgroundServiceKt.onLocationUpdate(arg: loc, sleep: false)
 					}

@@ -91,28 +91,6 @@ class IOSPlatform: Platform() {
         }
     }
 
-    val cbmanager = CBCentralManager()
-    override fun startScanBluetoothDevices(setRSSI: (String, Int) -> Unit): () -> Unit {
-        cbmanager.delegate = object : NSObject(), CBCentralManagerDelegateProtocol {
-            override fun centralManager(
-                central: CBCentralManager,
-                didDiscoverPeripheral: CBPeripheral,
-                advertisementData: Map<Any?, *>,
-                RSSI: NSNumber
-            ) {
-                val address = didDiscoverPeripheral.identifier.UUIDString
-                val name = didDiscoverPeripheral.name?: return
-                if(!nearBluetoothDevices.any { it.name == name })
-                    nearBluetoothDevices.add(BluetoothDevice(Random.nextULong(), name))
-                setRSSI(address, RSSI.intValue)
-            }
-
-            override fun centralManagerDidUpdateState(central: CBCentralManager) {}
-        }
-        cbmanager.scanForPeripheralsWithServices(null, null)
-        return {cbmanager.stopScan()}
-    }
-
     override fun runBackgroundService() {
     }
 

@@ -60,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -356,7 +357,6 @@ fun MapView() {
 
     addPersonPopupEnable = BasicDialog { AddPersonPopup() }
     val addTemporaryPersonPopupEnable = BasicDialog { AddPersonPopupTemporary() }
-    val addDevicePopupEnable = BasicDialog { AddDevicePopup() }
 
 
     val latestLocations by platform.database.locationValueDao()
@@ -690,33 +690,6 @@ private fun DpOffset.getDistance(): Float {
     return sqrt(x.value * x.value + y.value * y.value)
 }
 
-@Composable
-fun DialogScope.AddDevicePopup() {
-    var bluetoothDevices by remember { mutableStateOf(listOf<BluetoothDevice>()) }
-    LaunchedEffect(Unit) {
-        SuspendScope {
-            val already = platform.database.bluetoothDeviceDao().getAll()
-            bluetoothDevices = platform.nearBluetoothDevices.filter { it !in already }
-        }
-    }
-    Column {
-        Text(stringResource(Res.string.connect_bluetooth_device), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(Res.string.connect_bluetooth_device_description), style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.padding(8.dp))
-        bluetoothDevices.forEach { bluetoothDevice ->
-            ListItem(
-                TextP(bluetoothDevice.name),
-                Modifier.clickable {
-                    SuspendScope {
-                        platform.database.bluetoothDeviceDao().upsert(bluetoothDevice)
-                        close()
-                    }
-                }
-            )
-        }
-    }
-}
-
 interface DialogScope { fun close() }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -968,25 +941,34 @@ var AddPersonPopupInitial: ULong? = null
 @Composable
 fun DialogScope.AddPersonPopup() {
     val usersDao = platform.database.usersDao()
+    val scope = rememberCoroutineScope()
     var contactName: String? by remember { mutableStateOf(null) }
     var contactPhoto by remember { mutableStateOf<String?>(null) }
     val requestPickContact2 = platform.requestPickContact { name, photo ->
-        CoroutineScope(Dispatchers.Main).launch {
+        scope.launch {
             contactName = name
             contactPhoto = photo
         }
     }
-    Box {
-        UserCard(
+    val noContact = stringResource(Res.string.no_contact_selected)
+    val userSample by remember {
+        derivedStateOf {
             User(
                 Random.nextULong(),
-                contactName ?: stringResource(Res.string.no_contact_selected),
+                contactName ?: noContact,
                 contactPhoto,
                 "",
                 false,
                 RequestStatus.AWAITING_RESPONSE,
                 null
-            ), false
+            )
+        }
+    }
+    println(contactName)
+    println(userSample.name)
+    Box {
+        UserCard(
+            userSample, false
         )
     }
     val users by usersDao.getAllFlow().map{it.associateBy { it.id }}.collectAsState(emptyMap())
