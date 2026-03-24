@@ -1,6 +1,6 @@
 ## Notice: iOS app released
 https://apps.apple.com/us/app/find-family-secure-private/id6760863634
-The iOS app has been released. If you plan to use this app, please make sure any android users you connect to install the v2 version of this app: https://github.com/vayun-mathur/Modern-Apps/releases/tag/v2.2.1 or you will need to set up again
+The iOS app has been released. If you plan to use this app, please make sure any android users you connect to install the v2 version of this app: https://github.com/vayun-mathur/Modern-Apps/releases/tag/v2.2.1 so that they can continue to get updates. Otherwise updating will require reconnecting your devices later on.
 
 ## Notice: update to new app
 This app is superceded by the version in https://github.com/vayun-mathur/Modern-Apps
